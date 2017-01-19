@@ -56,7 +56,7 @@ R 10 8 1 HorizontalRail Sensor
 R 10 9 1 HorizontalRail NoSensor
 R 10 10 1 HorizontalRail NoSensor
 R 10 11 1 HorizontalRail NoSensor
-R 10 13 1 HorizontalRail NoSensor
+R 10 13 1 HorizontalRail Sensor
 R 11 3 1 HorizontalRail NoSensor
 R 11 5 1 HorizontalRail NoSensor
 R 11 7 1 HorizontalRail NoSensor
@@ -98,7 +98,7 @@ R 15 9 2 DownRightRail HorizontalRail NoSensor
 R 15 10 1 UpLeftRail NoSensor
 R 15 11 1 HorizontalRail NoSensor
 R 15 12 Custom station
-R 15 13 1 HorizontalRail Sensor
+R 15 13 1 HorizontalRail NoSensor
 R 16 3 1 HorizontalRail NoSensor
 R 16 5 1 HorizontalRail NoSensor
 R 16 7 1 HorizontalRail NoSensor
