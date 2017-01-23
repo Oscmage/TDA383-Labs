@@ -84,18 +84,17 @@ public class Lab1 {
 
     private class Train implements Runnable {
         private Direction direction;
-        private int speed, id;
+        private int originalSpeed, id;
 
-        public Train(Direction d, int speed, int id) {
+        public Train(Direction d, int originalSpeed, int id) {
             this.direction = d;
-            this.speed = speed;
+            this.originalSpeed = originalSpeed;
             this.id = id;
         }
 
         private void setSpeed(int speed) {
             try {
                 tsi.setSpeed(this.id, speed);
-//                System.out.println("Train id:" + this.id + ", new speed is: " + speed);
             } catch (CommandException e) {
                 e.printStackTrace();
             }
@@ -103,7 +102,7 @@ public class Lab1 {
 
         private void sleep() {
             try {
-                Thread.sleep(1000 + (20 * Math.abs(this.speed)));
+                Thread.sleep(1000 + (20 * Math.abs(this.originalSpeed)));
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -111,7 +110,7 @@ public class Lab1 {
 
         @Override
         public void run() {
-            setSpeed(speed);
+            setSpeed(originalSpeed);
             while (true) {
                 try {
                     SensorEvent e = tsi.getSensor(this.id);
@@ -129,13 +128,24 @@ public class Lab1 {
         }
 
         public void handleEvent(SensorEvent e) {
-            Point currPoint = new Point(e.getXpos(), e.getYpos());
+            double y = e.getYpos();
+            double x = e.getXpos();
             System.out.println("In handleEvent.");
-            
+            if (x == 15 && y == 3) {
+                slowDownAndSwitchDirection(e);
+            }
         }
 
-
+        private void slowDownAndSwitchDirection(SensorEvent e) {
+            setSpeed(0);
+            sleep();
+            setSpeed(this.originalSpeed);
+            if (this.direction == Direction.DOWN) this.direction = Direction.UP;
+            else this.direction = Direction.DOWN;
+        }
     }
+
+
 }
 
 
