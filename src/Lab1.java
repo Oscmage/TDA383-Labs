@@ -41,8 +41,8 @@ public class Lab1 {
     }
 
     public void addToHashMap() {
-        Point p1 = new Point(15,3);   // Start punkt 1 uppe
-        Point p2 = new Point(15,5);   // Start punkt 2 uppe
+        Point p1 = new Point(15, 3);   // Start punkt 1 uppe
+        Point p2 = new Point(15, 5);   // Start punkt 2 uppe
         Point p3 = new Point(14, 11); // Start punkt 3 nere
         Point p4 = new Point(14, 13); // Start punkt 4 nere
 
@@ -54,28 +54,28 @@ public class Lab1 {
         Semaphore s6 = new Semaphore(1);
 
         //Fyrkorsningen längst upp
-        hashPoint.put(new Point(6,6), s1);
-        hashPoint.put(new Point(9,5), s1);
-        hashPoint.put(new Point(10,7), s1);
-        hashPoint.put(new Point(10,8), s1);
+        hashPoint.put(new Point(6, 6), s1);
+        hashPoint.put(new Point(9, 5), s1);
+        hashPoint.put(new Point(10, 7), s1);
+        hashPoint.put(new Point(10, 8), s1);
 
         //Path längst upp
-        hashPoint.put(new Point(14,8), s2);
+        hashPoint.put(new Point(14, 8), s2);
 
         //Path höger // Glöm inte att även titta på 14,8 och 13,10. Dessa har redan semaphorer så kan inte läggas till igen.
-        hashPoint.put(new Point(14,7), s3);
-        hashPoint.put(new Point(13,9), s3);
+        hashPoint.put(new Point(14, 7), s3);
+        hashPoint.put(new Point(13, 9), s3);
 
         //Path mitten
-        hashPoint.put(new Point(13,10), s4);
-        hashPoint.put(new Point(6,10), s4);
+        hashPoint.put(new Point(13, 10), s4);
+        hashPoint.put(new Point(6, 10), s4);
 
         //Path vänster, Gäller även för 3,13 och 6.10 precis som för path höger
-        hashPoint.put(new Point(6,9), s5);
-        hashPoint.put(new Point(5,11), s5);
+        hashPoint.put(new Point(6, 9), s5);
+        hashPoint.put(new Point(5, 11), s5);
 
         //Station nedre, av nedre uppe eller nere.
-        hashPoint.put(new Point(3,13), s6);
+        hashPoint.put(new Point(3, 13), s6);
     }
 
     private enum Direction {
@@ -114,9 +114,7 @@ public class Lab1 {
             while (true) {
                 try {
                     SensorEvent e = tsi.getSensor(this.id);
-                    System.out.println("Sensor for " + this.id + ". " + e.getStatus());
                     handleEvent(e);
-
 
                 } catch (CommandException e1) {
                     e1.printStackTrace();
@@ -135,6 +133,9 @@ public class Lab1 {
             } else if (handleCross(e)) {
                 return;
             } else if (handleStationDown(e)) {
+                return;
+            } else {
+                handlePath(e);
 
             }
 
@@ -219,9 +220,9 @@ public class Lab1 {
         }
 
         private boolean handleCross(SensorEvent e) {
-            int x =  e.getXpos();
+            int x = e.getXpos();
             int y = e.getYpos();
-            Semaphore s = hashPoint.get(new Point(x,y));
+            Semaphore s = hashPoint.get(new Point(x, y));
 
             if (x == 6 && y == 6 || x == 9 && y == 5) {
                 if (this.direction == Direction.UP) s.release();
@@ -245,6 +246,45 @@ public class Lab1 {
             }
         }
 
+        private void release(Semaphore s) {
+            s.release();
+        }
+
+        private void handlePath(SensorEvent e) {
+            int x = e.getXpos();
+            int y = e.getYpos();
+            Semaphore s = hashPoint.get(new Point(x, y));
+            System.out.println("In handlePath. Id: " + this.id + " x:" + x + " y:" + y + " ");
+
+            if (isSensorActive(e)) {
+                if ((x == 14 && y == 7) || x == 13 && y == 9) {
+                    setSpeed(0);
+                    System.out.println("Semaphore acc... for id: " + this.id);
+                    acquire(s);
+                    System.out.println("Semaphore acquired for id: " + this.id);
+                    setSpeed(speed);
+                    try {
+                        tsi.setSwitch(15, 9, TSimInterface.SWITCH_LEFT);
+                    } catch (CommandException e1) {
+                        e1.printStackTrace();
+
+                    }
+                }
+
+                if (direction == Direction.DOWN && (x == 13 && y == 10)) {
+                    System.out.println("Semaphore re.... for id: " + this.id);
+
+                    release(s);
+                    System.out.println("Semaphore released for id: " + this.id);
+
+                }
+            }
+
+        }
+
+        private boolean isSensorActive(SensorEvent e) {
+            return e.getStatus() == 1;
+        }
 
     }
 
