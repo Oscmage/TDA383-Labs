@@ -126,17 +126,18 @@ public class Lab1 {
         }
 
         public void handleEvent(SensorEvent e) {
-            double y = e.getYpos();
-            double x = e.getXpos();
-            if (handleStartStop(e)) {
-                return;
-            } else if (handleCross(e)) {
-                return;
-            } else if (handleStationDown(e)) {
-                return;
-            } else {
-                handlePath(e);
+            if(isSensorActive(e)){
+                if (handleStartStop(e)) {
+                    return;
+                } else if (handleCross(e)) {
+                    return;
+                } else if (handleStationDown(e)) {
+                    return;
+                } else {
+                    handlePath(e);
+                }
             }
+
 
         }
 
@@ -163,7 +164,7 @@ public class Lab1 {
                         setSwitch(3 , 11, TSimInterface.SWITCH_LEFT);
                     }
                 } else {
-                    s.release();
+                    release(s);
                 }
                 return true;
             }
@@ -193,7 +194,6 @@ public class Lab1 {
             }
 
             if (x == 5 && y == 11) {
-                if (isSensorActive(e)){
                     if (this.direction == Direction.DOWN) {
                         s.release();
                     } else {
@@ -207,11 +207,10 @@ public class Lab1 {
                             setSwitch(4, 9, TSimInterface.SWITCH_RIGHT);
                         } else { // You should go down
                             acquire(whichRail);
-
                             setSwitch(4 , 9, TSimInterface.SWITCH_LEFT);
                         }
                     }
-                }
+
             }
             return false;
         }
