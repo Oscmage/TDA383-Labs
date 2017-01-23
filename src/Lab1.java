@@ -145,45 +145,68 @@ public class Lab1 {
             int y = e.getYpos();
             int x = e.getXpos();
 
+            Semaphore s = hashPoint.get(new Point(x,y));
+
             if (x == 6 && y == 9) {
 
-                Semaphore s = hashPoint.get(new Point(x,y));
                 if (this.direction == Direction.DOWN) {
 
                     acquire(s);
-                    setSwitch(x,y,TSimInterface.SWITCH_RIGHT);
+                    setSwitch(4,9,TSimInterface.SWITCH_RIGHT);
                     Semaphore whichStation = hashPoint.get(new Point(3,13));
 
                     if (whichStation.availablePermits() == 0) { // You should go up
                         //The station farthest down contains a train
-                        setSwitch(x, y, TSimInterface.SWITCH_RIGHT);
+                        setSwitch(3, 11, TSimInterface.SWITCH_RIGHT);
                     } else { // You should go down
                         acquire(whichStation);
-                        setSwitch(x , y, TSimInterface.SWITCH_LEFT);
+                        setSwitch(3 , 11, TSimInterface.SWITCH_LEFT);
                     }
                 } else {
                     s.release();
                 }
-            } else if (x == 6 && y == 10) {
+                return true;
+            }
 
-                Semaphore s = hashPoint.get(new Point(x,y));
+            if (x == 6 && y == 10) {
 
                 if (this.direction == Direction.DOWN) {
                     acquire(s);
-                    setSwitch(x,y,TSimInterface.SWITCH_LEFT);
+                    setSwitch(4,9,TSimInterface.SWITCH_LEFT);
                     Semaphore onDownMiddle = hashPoint.get(new Point(13,10));
                     onDownMiddle.release();
                     Semaphore whichStation = hashPoint.get(new Point(3,13));
 
                     if (whichStation.availablePermits() == 0) { // You should go up
                         //The station farthest down contains a train
-                        setSwitch(x, y, TSimInterface.SWITCH_RIGHT);
+                        setSwitch(3, 11, TSimInterface.SWITCH_RIGHT);
                     } else { // You should go down
                         acquire(whichStation);
-                        setSwitch(x, y, TSimInterface.SWITCH_LEFT);
+                        setSwitch(3, 11, TSimInterface.SWITCH_LEFT);
                     }
                 } else {
                     s.release();
+                }
+                return true;
+            }
+
+            if (x == 5 && y == 11) {
+
+                if (this.direction == Direction.DOWN) {
+                    s.release();
+                } else {
+                    setSpeed(0);
+                    acquire(s);
+                    setSwitch(3,11, TSimInterface.SWITCH_RIGHT);
+                    setSpeed(speed);
+                    Semaphore whichRail = hashPoint.get(new Point(13,10));
+                    if (whichRail.availablePermits() == 0) { // You should go up
+                        //The station farthest down contains a train
+                        setSwitch(4, 9, TSimInterface.SWITCH_RIGHT);
+                    } else { // You should go down
+                        acquire(whichRail);
+                        setSwitch(4 , 9, TSimInterface.SWITCH_LEFT);
+                    }
                 }
             }
             return false;
