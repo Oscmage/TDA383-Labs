@@ -150,8 +150,9 @@ public class Lab1 {
             if (x == 6 && y == 9) {
 
                 if (this.direction == Direction.DOWN) {
-
+                    setSpeed(0);
                     acquire(s);
+                    setSpeed(speed);
                     setSwitch(4,9,TSimInterface.SWITCH_RIGHT);
                     Semaphore whichStation = hashPoint.get(new Point(3,13));
 
@@ -171,7 +172,9 @@ public class Lab1 {
             if (x == 6 && y == 10) {
 
                 if (this.direction == Direction.DOWN) {
+                    setSpeed(0);
                     acquire(s);
+                    setSpeed(speed);
                     setSwitch(4,9,TSimInterface.SWITCH_LEFT);
                     Semaphore onDownMiddle = hashPoint.get(new Point(13,10));
                     onDownMiddle.release();
