@@ -128,16 +128,16 @@ public class Lab1 {
         public void handleEvent(SensorEvent e) {
             double y = e.getYpos();
             double x = e.getXpos();
-            if (handleStartStop(e)) {
-                return;
-            } else if (handleCross(e)) {
-                return;
-            } else if (handleStationDown(e)) {
-                return;
-            } else {
+//            if (handleStartStop(e)) {
+//                return;
+//            } else if (handleCross(e)) {
+//                return;
+//            } else if (handleStationDown(e)) {
+//                return;
+//            } else {
                 handlePath(e);
-
-            }
+//
+//            }
 
         }
 
@@ -191,7 +191,7 @@ public class Lab1 {
 
         private void setSwitch(double x, double y, int direction) {
             try {
-                tsi.setSwitch(3,11,direction);
+                tsi.setSwitch((int) x,(int) y,direction);
             } catch (CommandException e1) {
                 e1.printStackTrace();
             }
@@ -263,18 +263,20 @@ public class Lab1 {
                     acquire(s);
                     System.out.println("Semaphore acquired for id: " + this.id);
                     setSpeed(speed);
-                    try {
-                        tsi.setSwitch(15, 9, TSimInterface.SWITCH_LEFT);
-                    } catch (CommandException e1) {
-                        e1.printStackTrace();
+
+                    if(this.direction == Direction.UP){
+                        setSwitch(15,9, TSimInterface.SWITCH_RIGHT);
+                    }else{
+                        setSwitch(15,9, TSimInterface.SWITCH_LEFT);
 
                     }
+
                 }
 
                 if (direction == Direction.DOWN && (x == 13 && y == 10)) {
                     System.out.println("Semaphore re.... for id: " + this.id);
-
-                    release(s);
+                    Semaphore s1 = hashPoint.get(new Point(13,9));
+                    release(s1);
                     System.out.println("Semaphore released for id: " + this.id);
 
                 }
