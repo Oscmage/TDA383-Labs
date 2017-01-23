@@ -128,16 +128,15 @@ public class Lab1 {
         public void handleEvent(SensorEvent e) {
             double y = e.getYpos();
             double x = e.getXpos();
-//            if (handleStartStop(e)) {
-//                return;
-//            } else if (handleCross(e)) {
-//                return;
-//            } else if (handleStationDown(e)) {
-//                return;
-//            } else {
+            if (handleStartStop(e)) {
+                return;
+            } else if (handleCross(e)) {
+                return;
+            } else if (handleStationDown(e)) {
+                return;
+            } else {
                 handlePath(e);
-//
-//            }
+            }
 
         }
 
@@ -194,21 +193,23 @@ public class Lab1 {
             }
 
             if (x == 5 && y == 11) {
+                if (isSensorActive(e)){
+                    if (this.direction == Direction.DOWN) {
+                        s.release();
+                    } else {
+                        setSpeed(0);
+                        acquire(s);
+                        setSwitch(3,11, TSimInterface.SWITCH_LEFT);
+                        setSpeed(speed);
+                        Semaphore whichRail = hashPoint.get(new Point(13,10));
+                        if (whichRail.availablePermits() == 0) { // You should go up
+                            //The station farthest down contains a train
+                            setSwitch(4, 9, TSimInterface.SWITCH_RIGHT);
+                        } else { // You should go down
+                            acquire(whichRail);
 
-                if (this.direction == Direction.DOWN) {
-                    s.release();
-                } else {
-                    setSpeed(0);
-                    acquire(s);
-                    setSwitch(3,11, TSimInterface.SWITCH_RIGHT);
-                    setSpeed(speed);
-                    Semaphore whichRail = hashPoint.get(new Point(13,10));
-                    if (whichRail.availablePermits() == 0) { // You should go up
-                        //The station farthest down contains a train
-                        setSwitch(4, 9, TSimInterface.SWITCH_RIGHT);
-                    } else { // You should go down
-                        acquire(whichRail);
-                        setSwitch(4 , 9, TSimInterface.SWITCH_LEFT);
+                            setSwitch(4 , 9, TSimInterface.SWITCH_LEFT);
+                        }
                     }
                 }
             }
