@@ -134,8 +134,66 @@ public class Lab1 {
                 return;
             } else if (handleCross(e)) {
                 return;
+            } else if (handleStationDown(e)) {
+
             }
 
+        }
+
+        private boolean handleStationDown(SensorEvent e) {
+            int y = e.getYpos();
+            int x = e.getXpos();
+
+            if (x == 6 && y == 9) {
+
+                Semaphore s = hashPoint.get(new Point(x,y));
+                if (this.direction == Direction.DOWN) {
+
+                    acquire(s);
+                    setSwitch(x,y,TSimInterface.SWITCH_RIGHT);
+                    Semaphore whichStation = hashPoint.get(new Point(3,13));
+
+                    if (whichStation.availablePermits() == 0) { // You should go up
+                        //The station farthest down contains a train
+                        setSwitch(x, y, TSimInterface.SWITCH_RIGHT);
+                    } else { // You should go down
+                        acquire(whichStation);
+                        setSwitch(x , y, TSimInterface.SWITCH_LEFT);
+                    }
+                } else {
+                    s.release();
+                }
+            } else if (x == 6 && y == 10) {
+
+                Semaphore s = hashPoint.get(new Point(x,y));
+
+                if (this.direction == Direction.DOWN) {
+                    acquire(s);
+                    setSwitch(x,y,TSimInterface.SWITCH_LEFT);
+                    Semaphore onDownMiddle = hashPoint.get(new Point(13,10));
+                    onDownMiddle.release();
+                    Semaphore whichStation = hashPoint.get(new Point(3,13));
+
+                    if (whichStation.availablePermits() == 0) { // You should go up
+                        //The station farthest down contains a train
+                        setSwitch(x, y, TSimInterface.SWITCH_RIGHT);
+                    } else { // You should go down
+                        acquire(whichStation);
+                        setSwitch(x, y, TSimInterface.SWITCH_LEFT);
+                    }
+                } else {
+                    s.release();
+                }
+            }
+            return false;
+        }
+
+        private void setSwitch(double x, double y, int direction) {
+            try {
+                tsi.setSwitch(3,11,direction);
+            } catch (CommandException e1) {
+                e1.printStackTrace();
+            }
         }
 
         private boolean handleStartStop(SensorEvent e) {
