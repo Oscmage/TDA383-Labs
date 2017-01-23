@@ -131,14 +131,17 @@ public class Lab1 {
             double y = e.getYpos();
             double x = e.getXpos();
             System.out.println("In handleEvent.");
-            if (x == 15 && y == 3) {
-                slowDownAndSwitchDirection(e);
+            if (x == 15 && (y == 3 || y == 5)) {
+                if (this.direction == Direction.UP) slowDownAndSwitchDirection(e);
+            } else if (x == 14 && (y == 11 || y == 13)) {
+                if (this.direction == Direction.DOWN) slowDownAndSwitchDirection(e);
             }
         }
 
         private void slowDownAndSwitchDirection(SensorEvent e) {
             setSpeed(0);
             sleep();
+            this.originalSpeed = -this.originalSpeed;
             setSpeed(this.originalSpeed);
             if (this.direction == Direction.DOWN) this.direction = Direction.UP;
             else this.direction = Direction.DOWN;
