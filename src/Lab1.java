@@ -166,40 +166,27 @@ public class Lab1 {
             Semaphore s = hashPoint.get(new Point(x,y));
 
             if (x == 6 && y == 6 || x == 9 && y == 5) {
-               acquireOnDirectionDown(s);
+                if (this.direction == Direction.UP) s.release();
+                else acquire(s);
                 return true;
             }
 
             if (x == 10 && (y == 7 || y == 8)) {
-                acquireOnDirectionUp(s);
+                if (this.direction == Direction.DOWN) s.release();
+                else acquire(s);
                 return true;
             }
             return false;
         }
-        
-        private void acquireOnDirectionDown(Semaphore s) {
-            if (this.direction == Direction.DOWN) {
-                try {
-                    s.acquire();
-                } catch (InterruptedException e1) {
-                    e1.printStackTrace();
-                }
-            } else {
-                s.release();
+
+        private void acquire(Semaphore s) {
+            try {
+                s.acquire();
+            } catch (InterruptedException e1) {
+                e1.printStackTrace();
             }
         }
 
-        private void acquireOnDirectionUp (Semaphore s) {
-            if (this.direction == Direction.UP) {
-                try {
-                    s.acquire();
-                } catch (InterruptedException e1) {
-                    e1.printStackTrace();
-                }
-            } else {
-                s.release();
-            }
-        }
 
     }
 
