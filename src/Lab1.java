@@ -214,7 +214,7 @@ public class Lab1 {
                     setSpeed(speed);
                     setSwitch(17,7,TSimInterface.SWITCH_RIGHT);
                 } else {
-                    grightSingleRail.release();
+                    rightSingleRail.release();
                 }
                 return true;
             } else if (x == 14 && y == 8) {
