@@ -205,7 +205,6 @@ public class Lab1 {
             }
         }
 
-        //TODO Fixa hanteringen av de boolska variablerna, uppe/nere
         private boolean handleRightSingleRail(int x, int y) {
             //You're on the cross side of the single rail
             if (x == 14 && y == 7) {
@@ -215,7 +214,7 @@ public class Lab1 {
                     setSpeed(speed);
                     setSwitch(17,7,TSimInterface.SWITCH_RIGHT);
                 } else {
-                    rightSingleRail.release();
+                    grightSingleRail.release();
                 }
                 return true;
             } else if (x == 14 && y == 8) {
