@@ -137,7 +137,7 @@ public class Lab1 {
                 return true;
             }
 
-            if (x == 5 && y == 11) {
+            if (x == 6 && y == 11) {
                 if (direction == Direction.DOWN) {
                     leftSingleRail.release();
                 } else {
@@ -149,7 +149,7 @@ public class Lab1 {
                 return true;
             }
 
-            if (x == 3 && y == 13) {
+            if (x == 5 && y == 13) {
                 if (direction == Direction.DOWN) {
                     leftSingleRail.release();
                 } else {
@@ -171,7 +171,6 @@ public class Lab1 {
                 if (direction == Direction.DOWN) {
                     if (middleDualRail.tryAcquire()) {
                         setSwitch(15,9,TSimInterface.SWITCH_LEFT);
-                        station1bFree = true;
                     } else {
                         setSwitch(15,9,TSimInterface.SWITCH_RIGHT);
                     }
@@ -211,8 +210,8 @@ public class Lab1 {
                 if (this.direction == Direction.DOWN) {
                     setSpeed(0);
                     acquire(rightSingleRail);
-                    setSpeed(speed);
                     setSwitch(17,7,TSimInterface.SWITCH_RIGHT);
+                    setSpeed(speed);
                 } else {
                     rightSingleRail.release();
                 }
@@ -221,9 +220,9 @@ public class Lab1 {
                 if (this.direction == Direction.DOWN) {
                     setSpeed(0);
                     acquire(rightSingleRail);
-                    setSpeed(speed);
                     setSwitch(17,7,TSimInterface.SWITCH_LEFT);
-                    station2bFree = true;
+                    setSpeed(speed);
+                    station1bFree = true;
                 } else {
                     rightSingleRail.release();
                 }
