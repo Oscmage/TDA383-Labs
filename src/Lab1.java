@@ -137,15 +137,6 @@ public class Lab1 {
             int y = e.getYpos();
 
             if(isSensorActive(e)) {
-//                if (handleStartStop(e)) {
-//                    return;
-//                } else if (handleCross(e)) {
-//                    return;
-//                } else if (handleStationDown(e)) {
-//                    return;
-//                } else {
-//                    handlePath(e);
-//                }
 
                 //handle when the train arrives to the upper station
                 if (this.direction == Direction.UP && (x == 15 && (y == 3 || y == 5))) {
@@ -167,25 +158,21 @@ public class Lab1 {
 
 
 //                    arrives to "single path" 14 7 14 8 19 8
+                } else if (this.direction == Direction.UP && (x == 14 && y == 7)) {
+
+                } else if (this.direction == Direction.UP && (x == 14 && y == 8)) {
+
                 } else if (this.direction == Direction.DOWN && (x == 14 && y == 7)) {
                     stopAtIntersectionTryAcquire(2);
                     setSwitch(17, 7, TSimInterface.SWITCH_RIGHT);
                     setSpeed(speed);
-//                    SensorEvent e1 = getActiveSensor();
-//                    release(semaphores[0]);
-//                    handleEvent(e1);
+                    SensorEvent e1 = getActiveSensor();
+                    release(semaphores[0]);
+                    handleEvent(e1);
                 } else if (this.direction == Direction.DOWN && (x == 14 && y == 8)) {
                     stopAtIntersectionTryAcquire(2);
                     setSwitch(17, 7, TSimInterface.SWITCH_LEFT);
                     setSpeed(speed);
-//                    SensorEvent e1 = getActiveSensor();
-//                    release(semaphores[0]);
-//                    handleEvent(e1);
-                } else if (this.direction == Direction.UP && (x == 14 && y == 7)) {
-                    release(semaphores[2]);
-
-                } else if (this.direction == Direction.UP && (x == 14 && y == 8)) {
-                    release(semaphores[2]);
 
                 } else if (this.direction == Direction.UP && (x == 19 && y == 8)) {
                     if (!tryAcquire(semaphores[0])) {
@@ -193,18 +180,18 @@ public class Lab1 {
                     }else{
                         setSwitch(17, 7, TSimInterface.SWITCH_RIGHT);
                     }
-                    release(semaphores[3]); //remove comment later when sem 3 is acquired
-
+                    SensorEvent e1 = getActiveSensor();
+                    release(semaphores[2]);
+                    handleEvent(e1);
                 } else if (this.direction == Direction.DOWN && (x == 19 && y == 8)){
-//                    System.out.println("Semaphore three " +semaphores[3].toString());
                     if (!tryAcquire(semaphores[3])) {
-                        System.out.println("Not Acquired 3 ");
                         setSwitch(15, 9, TSimInterface.SWITCH_LEFT);
                     } else {
-                        System.out.println("Acquired 3");
                         setSwitch(15, 9, TSimInterface.SWITCH_RIGHT);
                     }
-                    release(semaphores[0]);
+                    SensorEvent e1 = getActiveSensor();
+                    release(semaphores[2]);
+                    handleEvent(e1);
 
                     //middle right
                 }  else if (this.direction == Direction.UP && (x == 13 && y == 9)) {
@@ -212,27 +199,27 @@ public class Lab1 {
                     setSpeed(speed);
                     setSwitch(15,9, TSimInterface.SWITCH_RIGHT);
                     SensorEvent e1 = getActiveSensor();
-//                    release(semaphores[3]);
+                    release(semaphores[3]);
                     handleEvent(e1);
                 } else if (this.direction == Direction.UP && (x == 13 && y == 10)) {
                     stopAtIntersectionTryAcquire(2);
                     setSpeed(speed);
                     setSwitch(15,9, TSimInterface.SWITCH_LEFT);
                 } else if (this.direction == Direction.DOWN && (x == 13 && y == 9)) {
-                    release(semaphores[2]);
+
                 } else if (this.direction == Direction.DOWN && (x == 13 && y == 10)) {
-                    release(semaphores[2]);
 
 
                     //middle left
                 } else if (this.direction == Direction.UP && (x == 6 && y == 9)) {
-                    release(semaphores[4]);
                 } else if (this.direction == Direction.UP && (x == 6 && y == 10)) {
-                    release(semaphores[4]);
                 } else if (this.direction == Direction.DOWN && (x == 6 && y == 9)) {
                     stopAtIntersectionTryAcquire(4);
                     setSwitch(4,9, TSimInterface.SWITCH_LEFT);
                     setSpeed(speed);
+                    SensorEvent e1 = getActiveSensor();
+                    release(semaphores[3]);
+                    handleEvent(e1);
                 } else if (this.direction == Direction.DOWN && (x == 6 && y == 10)) {
                     stopAtIntersectionTryAcquire(4);
                     setSwitch(4,9, TSimInterface.SWITCH_RIGHT);
@@ -245,29 +232,36 @@ public class Lab1 {
                     } else {
                         setSwitch(4, 9, TSimInterface.SWITCH_LEFT);
                     }
-                    release(semaphores[5]);
+                    SensorEvent e1 = getActiveSensor();
+                    release(semaphores[4]);
+                    handleEvent(e1);
                 } else if (this.direction == Direction.DOWN && (x == 1 && y == 10)) {
                     if (!tryAcquire(semaphores[5])) {
-                        setSwitch(3, 11, TSimInterface.SWITCH_LEFT);
-                    } else {
                         setSwitch(3, 11, TSimInterface.SWITCH_RIGHT);
+                    } else {
+                        setSwitch(3, 11, TSimInterface.SWITCH_LEFT);
                     }
-//                    release(semaphores[3]);
+                    SensorEvent e1 = getActiveSensor();
+                    release(semaphores[4]);
+                    handleEvent(e1);
 
                     //last sensors
                 }else if (this.direction == Direction.DOWN && (x == 5 && y == 11)) {
-                    release(semaphores[4]);
                 }else if (this.direction == Direction.DOWN && (x == 3 && y == 13)) {
-                    release(semaphores[4]);
 
                 }else if (this.direction == Direction.UP && (x == 5 && y == 11)) {
                     stopAtIntersectionTryAcquire(4);
                     setSwitch(3,11, TSimInterface.SWITCH_LEFT);
                     setSpeed(speed);
+                    SensorEvent e1 = getActiveSensor();
+                    release(semaphores[5]);
+                    handleEvent(e1);
                 }else if (this.direction == Direction.UP && (x == 3 && y == 13)) {
                     stopAtIntersectionTryAcquire(4);
                     setSwitch(3,11, TSimInterface.SWITCH_RIGHT);
                     setSpeed(speed);
+
+
                 }
 
             }
