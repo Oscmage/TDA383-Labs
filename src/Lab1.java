@@ -267,10 +267,10 @@ public class Lab1 {
         }
 
         private boolean handleStartStop(int x, int y) {
-            if (x == 15 && (y == 3 || y == 5)) {
+            if (x == 16 && (y == 3 || y == 5)) {
                 if (this.direction == Direction.UP) slowDownAndSwitchDirection();
                 return true;
-            } else if (x == 14 && (y == 11 || y == 13)) {
+            } else if (x == 15 && (y == 11 || y == 13)) {
                 if (this.direction == Direction.DOWN) slowDownAndSwitchDirection();
                 return true;
             }
@@ -289,14 +289,26 @@ public class Lab1 {
         private boolean handleCross(int x, int y) {
 
             if (x == 6 && y == 6 || x == 9 && y == 5) {
-                if (this.direction == Direction.UP) cross.release();
-                else acquire(cross);
+                if (this.direction == Direction.UP) {
+                    cross.release();
+                } else  {
+                    setSpeed(0);
+                    acquire(cross);
+                    setSpeed(speed);
+                }
+
                 return true;
             }
 
-            if (x == 10 && (y == 7 || y == 8)) {
-                if (this.direction == Direction.DOWN) cross.release();
-                else acquire(cross);
+            if (x == 11 && y == 7 || x == 10 && y == 8) {
+                if (this.direction == Direction.DOWN) {
+                    cross.release();
+                }
+                else {
+                    setSpeed(0);
+                    acquire(cross);
+                    setSpeed(speed);
+                }
                 return true;
             }
             return false;
