@@ -6,8 +6,7 @@ import java.util.concurrent.Semaphore;
 
 public class Lab1 {
     private TSimInterface tsi;
-    private Semaphore cross, rightSingleRail, leftSingleRail, middleDualRail;
-    private boolean station1bFree = true, station2bFree = true;
+    private Semaphore cross, rightSingleRail, leftSingleRail, middleDualRail, station1b, station2b;
 
     public Lab1(Integer speed1, Integer speed2) {
         tsi = TSimInterface.getInstance();
@@ -16,6 +15,8 @@ public class Lab1 {
         rightSingleRail = new Semaphore(1);
         leftSingleRail = new Semaphore(1);
         middleDualRail = new Semaphore(1);
+        station1b = new Semaphore(1);
+        station2b = new Semaphore(1);
 
         Thread t1 = new Thread(new Train(Direction.DOWN, speed1, 1));
         Thread t2 = new Thread(new Train(Direction.UP, speed2, 2));
@@ -160,7 +161,7 @@ public class Lab1 {
                 } else {
                     acquireAndChangeSwitch(leftSingleRail, 3, 11, TSimInterface.SWITCH_RIGHT);
                     // Since you've acquired the semaphore, you can be certain no one is reading station2bFree.
-                    station2bFree = true;
+                    station2b.release();
                 }
                 return true;
             }
@@ -181,8 +182,7 @@ public class Lab1 {
                     // You hold the semaphore for the single rail to the right.
                     // You can be certain no one else touches the station1bFree variable.
                     // Default is to take the bottom rail.
-                    if (station1bFree) {
-                        station1bFree = false;
+                    if (station1b.tryAcquire()) {
                         setSwitch(17, 7, TSimInterface.SWITCH_LEFT);
                     } else {
                         setSwitch(17, 7, TSimInterface.SWITCH_RIGHT);
@@ -196,9 +196,8 @@ public class Lab1 {
                     // You hold the semaphore for the single rail on the left side.
                     // You can be certain no one else can change the state of station2bFree.
                     // Default is to take the bottom rail if it's not occupied.
-                    if (station2bFree) {
+                    if (station2b.tryAcquire()) {
                         setSwitch(3, 11 ,TSimInterface.SWITCH_RIGHT);
-                        station2bFree = false;
                     } else {
                         setSwitch(3, 11, TSimInterface.SWITCH_LEFT);
                     }
@@ -224,7 +223,7 @@ public class Lab1 {
             } else if (x == 14 && y == 8) { // Bottom of the two
                 if (isDirectionDown()) {
                     acquireAndChangeSwitch(rightSingleRail, 17, 7, TSimInterface.SWITCH_LEFT);
-                    station1bFree = true;
+                    station1b.release();
                 } else {
                     rightSingleRail.release();
                 }
