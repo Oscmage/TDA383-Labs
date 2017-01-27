@@ -6,12 +6,8 @@ import java.util.concurrent.Semaphore;
 
 public class Lab1 {
     private TSimInterface tsi;
-    private Semaphore cross;
-    private Semaphore rightSingleRail;
-    private Semaphore leftSingleRail;
-    private Semaphore middleDualRail;
-    private boolean station1bFree = true;
-    private boolean station2bFree = true;
+    private Semaphore cross, rightSingleRail, leftSingleRail, middleDualRail;
+    private boolean station1bFree = true, station2bFree = true;
 
     public Lab1(Integer speed1, Integer speed2) {
         tsi = TSimInterface.getInstance();
@@ -20,16 +16,6 @@ public class Lab1 {
         rightSingleRail = new Semaphore(1);
         leftSingleRail = new Semaphore(1);
         middleDualRail = new Semaphore(1);
-
-        try {
-            //manually set the switch
-            tsi.setSwitch(17, 7, TSimInterface.SWITCH_RIGHT);
-            tsi.setSwitch(15, 9, TSimInterface.SWITCH_RIGHT);
-//            tsi.setSwitch(3,11,TSimInterface.SWITCH_RIGHT);
-        } catch (CommandException e) {
-            e.printStackTrace();    // or only e.getMessage() for the error
-            System.exit(1);
-        }
 
         Thread t1 = new Thread(new Train(Direction.DOWN, speed1, 1));
         Thread t2 = new Thread(new Train(Direction.UP, speed2, 2));
@@ -45,9 +31,12 @@ public class Lab1 {
 
     }
 
-
     private enum Direction {
-        UP, DOWN
+        UP, DOWN;
+
+        public static Direction getOpposite (Direction d) {
+            return d == UP ? DOWN : UP;
+        }
     }
 
     private class Train implements Runnable {
@@ -60,76 +49,95 @@ public class Lab1 {
             this.id = id;
         }
 
-        private void setSpeed(int speed) {
-            try {
-                tsi.setSpeed(this.id, speed);
-            } catch (CommandException e) {
-                e.printStackTrace();
-            }
-        }
-
-        private void sleep() {
-            try {
-                Thread.sleep(1000 + (20 * Math.abs(this.speed)));
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
         @Override
         public void run() {
-            setSpeed(speed);
-            while (true) {
-                try {
-                    SensorEvent e = tsi.getSensor(this.id);
-                    handleEvent(e);
 
+            try {
+                setSpeed(speed);
+            } catch (CommandException e) {
+                System.err.println(e.getMessage());
+                System.exit(1);
+            }
+
+            while (true) {
+                SensorEvent e;
+                try {
+                    e = tsi.getSensor(this.id);
+                    handleEvent(e);
                 } catch (CommandException e1) {
-                    e1.printStackTrace();
+                    System.err.println(e1.getMessage());
+                    System.exit(1);
                 } catch (InterruptedException e1) {
                     e1.printStackTrace();
                 }
             }
-
         }
 
-        public void handleEvent(SensorEvent e) {
+        private void setSpeed(int speed) throws CommandException {
+            tsi.setSpeed(this.id, speed);
+        }
+
+        private void sleep() throws InterruptedException {
+            Thread.sleep(1000 + (20 * Math.abs(this.speed)));
+        }
+
+        private void setSwitch(double x, double y, int direction) throws CommandException {
+            tsi.setSwitch((int) x,(int) y,direction);
+        }
+
+        private void acquire(Semaphore s) throws InterruptedException, CommandException {
+            setSpeed(0);
+            s.acquire();
+            setSpeed(speed);
+        }
+
+        private void acquireAndChangeSwitch(Semaphore s, int x, int y, int direction) throws CommandException,
+                InterruptedException
+        {
+            setSpeed(0);
+            s.acquire();
+            setSwitch(x, y, direction);
+            setSpeed(speed);
+        }
+
+        private boolean isDirectionDown() {
+            return direction == Direction.DOWN;
+        }
+
+        public void handleEvent(SensorEvent e) throws CommandException, InterruptedException {
             if (isSensorActive(e)) {
                 int x = e.getXpos();
                 int y =  e.getYpos();
-                if (handleStartStop(x, y)) {
+
+                // Handler methods for the different situations that can occur.
+                if (handleStartStop(x, y)) { //Takes care of all stations
                     return;
-                } else if (handleCross(x, y)) {
+                } else if (handleCross(x, y)) { // Takes care of the cross intersection
                     return;
-                } else if (handleRightSingleRail(x, y)) {
+                } else if (handleRightSingleRail(x, y)) { // Takes care of single rail on the right side of the map
                     return;
-                } else if (handleLeftSingleRail(x, y)) {
+                } else if (handleLeftSingleRail(x, y)) { // Takes care of single rail on right side of the map
                     return;
                 } else {
-                    handleMiddelDualRail(x,y);
+                    handleMiddleDualRail(x, y); // Handles the middle dual rail.
                 }
             }
         }
 
-        private boolean handleLeftSingleRail(int x, int y) {
-            if (x == 7 && y == 9) {
-                if (direction == Direction.DOWN) {
-                    setSpeed(0);
-                    acquire(leftSingleRail);
-                    setSpeed(speed);
-                    setSwitch(4,9,TSimInterface.SWITCH_LEFT);
+        private boolean handleLeftSingleRail(int x, int y) throws CommandException, InterruptedException {
+
+            if (x == 7 && y == 9) { // Currently on middle dual rail, top track.
+                if (isDirectionDown()) {
+                    acquireAndChangeSwitch(leftSingleRail, 4, 9, TSimInterface.SWITCH_LEFT);
                 } else {
                     leftSingleRail.release();
                 }
                 return true;
             }
 
-            if (x == 6 && y == 10) {
-                if (direction == Direction.DOWN) {
-                    setSpeed(0);
-                    acquire(leftSingleRail);
-                    setSwitch(4,9,TSimInterface.SWITCH_RIGHT);
-                    setSpeed(speed);
+            if (x == 6 && y == 10) { // Currently on middle dual rail, bottom track.
+                if (isDirectionDown()) {
+                    acquireAndChangeSwitch(leftSingleRail, 4, 9, TSimInterface.SWITCH_RIGHT);
                     middleDualRail.release();
                 } else {
                     leftSingleRail.release();
@@ -137,26 +145,21 @@ public class Lab1 {
                 return true;
             }
 
-            if (x == 6 && y == 11) {
-                if (direction == Direction.DOWN) {
+            if (x == 6 && y == 11) { // Top station (of the bottom ones)
+                if (isDirectionDown()) {
                     leftSingleRail.release();
                 } else {
-                    setSpeed(0);
-                    acquire(leftSingleRail);
-                    setSwitch(3,11,TSimInterface.SWITCH_LEFT);
-                    setSpeed(speed);
+                    acquireAndChangeSwitch(leftSingleRail, 3, 11, TSimInterface.SWITCH_LEFT);
                 }
                 return true;
             }
 
-            if (x == 5 && y == 13) {
-                if (direction == Direction.DOWN) {
+            if (x == 5 && y == 13) { // Bottom station (of the bottom ones)
+                if (isDirectionDown()) {
                     leftSingleRail.release();
                 } else {
-                    setSpeed(0);
-                    acquire(leftSingleRail);
-                    setSwitch(3,11,TSimInterface.SWITCH_RIGHT);
-                    setSpeed(speed);
+                    acquireAndChangeSwitch(leftSingleRail, 3, 11, TSimInterface.SWITCH_RIGHT);
+                    // Since you've acquired the semaphore, you can be certain no one is reading station2bFree.
                     station2bFree = true;
                 }
                 return true;
@@ -164,64 +167,63 @@ public class Lab1 {
             return false;
         }
 
-        private void handleMiddelDualRail(int x, int y) {
+        private void handleMiddleDualRail(int x, int y) throws CommandException {
 
-            //Handles right side
+            // Sensor on the right side of the dual rail in middle
             if (x == 19 && y == 8) {
-                if (direction == Direction.DOWN) {
+                if (isDirectionDown()) { // Heading towards the dual rail
                     if (middleDualRail.tryAcquire()) {
-                        setSwitch(15,9,TSimInterface.SWITCH_LEFT);
+                        setSwitch(15, 9, TSimInterface.SWITCH_LEFT);
                     } else {
-                        setSwitch(15,9,TSimInterface.SWITCH_RIGHT);
+                        setSwitch(15, 9, TSimInterface.SWITCH_RIGHT);
                     }
-                } else {
-                    System.out.println("Station1bfree: " + station1bFree);
+                } else { // Heading away from the dual rail and upwards
+                    // You hold the semaphore for the single rail to the right.
+                    // You can be certain no one else touches the station1bFree variable.
+                    // Default is to take the bottom rail.
                     if (station1bFree) {
                         station1bFree = false;
-                        setSwitch(17,7,TSimInterface.SWITCH_LEFT);
+                        setSwitch(17, 7, TSimInterface.SWITCH_LEFT);
                     } else {
-                        setSwitch(17,7,TSimInterface.SWITCH_RIGHT);
+                        setSwitch(17, 7, TSimInterface.SWITCH_RIGHT);
                     }
                 }
             }
 
-            //Handles left side
+            // Sensor on the left side of the dual rail in middle
             if (x == 1 && y == 10) {
-                if (direction == Direction.DOWN) {
+                if (isDirectionDown()) { // Heading away from dual rail
+                    // You hold the semaphore for the single rail on the left side.
+                    // You can be certain no one else can change the state of station2bFree.
+                    // Default is to take the bottom rail if it's not occupied.
                     if (station2bFree) {
-                        setSwitch(3,11,TSimInterface.SWITCH_RIGHT);
+                        setSwitch(3, 11 ,TSimInterface.SWITCH_RIGHT);
                         station2bFree = false;
                     } else {
-                        setSwitch(3,11,TSimInterface.SWITCH_LEFT);
+                        setSwitch(3, 11, TSimInterface.SWITCH_LEFT);
                     }
-                } else {
-                    if (middleDualRail.tryAcquire()) {
-                        setSwitch(4,9,TSimInterface.SWITCH_RIGHT);
+                } else { // Heading towards the dual middle rail
+                    if (middleDualRail.tryAcquire()) { // Is someone on the bottom track?
+                        setSwitch(4, 9, TSimInterface.SWITCH_RIGHT);
                     } else {
-                        setSwitch(4,9,TSimInterface.SWITCH_LEFT);
+                        setSwitch(4, 9, TSimInterface.SWITCH_LEFT);
                     }
                 }
             }
         }
 
-        private boolean handleRightSingleRail(int x, int y) {
-            //You're on the cross side of the single rail
-            if (x == 14 && y == 7) {
-                if (this.direction == Direction.DOWN) {
-                    setSpeed(0);
-                    acquire(rightSingleRail);
-                    setSwitch(17,7,TSimInterface.SWITCH_RIGHT);
-                    setSpeed(speed);
+        private boolean handleRightSingleRail(int x, int y) throws CommandException, InterruptedException {
+            // To the right of the cross
+            if (x == 14 && y == 7) { // Top of the two
+                if (isDirectionDown()) {
+                    acquireAndChangeSwitch(rightSingleRail, 17, 7, TSimInterface.SWITCH_RIGHT);
                 } else {
                     rightSingleRail.release();
                 }
                 return true;
-            } else if (x == 14 && y == 8) {
-                if (this.direction == Direction.DOWN) {
-                    setSpeed(0);
-                    acquire(rightSingleRail);
-                    setSwitch(17,7,TSimInterface.SWITCH_LEFT);
-                    setSpeed(speed);
+            } else if (x == 14 && y == 8) { // Bottom of the two
+                if (isDirectionDown()) {
+                    acquireAndChangeSwitch(rightSingleRail, 17, 7, TSimInterface.SWITCH_LEFT);
                     station1bFree = true;
                 } else {
                     rightSingleRail.release();
@@ -229,25 +231,20 @@ public class Lab1 {
                 return true;
             }
 
-            //You're on the middle side of the right side single rail.
+            // You're currently on the middle dual rail. Top of the two
             if (x == 12 && y == 9) {
-                if (this.direction == Direction.UP) {
-                    setSpeed(0);
-                    acquire(rightSingleRail);
-                    setSwitch(15,9,TSimInterface.SWITCH_RIGHT);
-                    setSpeed(speed);
-                } else {
+                if (isDirectionDown()) {
                     rightSingleRail.release();
+                } else {
+                    acquireAndChangeSwitch(rightSingleRail, 15, 9, TSimInterface.SWITCH_RIGHT);
                 }
                 return true;
             }
 
+            // You're currently on the middle dual rail. Bottom of the two
             if (x == 13 && y == 10) {
                 if (this.direction == Direction.UP) {
-                    setSpeed(0);
-                    acquire(rightSingleRail);
-                    setSwitch(15,9,TSimInterface.SWITCH_LEFT);
-                    setSpeed(speed);
+                    acquireAndChangeSwitch(rightSingleRail, 15, 9, TSimInterface.SWITCH_LEFT);
                     middleDualRail.release();
                 } else {
                     rightSingleRail.release();
@@ -257,74 +254,57 @@ public class Lab1 {
             return false;
         }
 
-
-        private void setSwitch(double x, double y, int direction) {
-            try {
-                tsi.setSwitch((int) x,(int) y,direction);
-            } catch (CommandException e1) {
-                e1.printStackTrace();
-            }
-        }
-
-        private boolean handleStartStop(int x, int y) {
-            if (x == 16 && (y == 3 || y == 5)) {
-                if (this.direction == Direction.UP) slowDownAndSwitchDirection();
+        /**
+         * Takes care of the start and stop at the stations.
+         */
+        private boolean handleStartStop(int x, int y) throws CommandException, InterruptedException {
+            if (x == 16 && (y == 3 || y == 5)) { // Top stations
+                if (!isDirectionDown()) slowDownAndSwitchDirection(); // Heading upwards
                 return true;
-            } else if (x == 15 && (y == 11 || y == 13)) {
-                if (this.direction == Direction.DOWN) slowDownAndSwitchDirection();
+            } else if (x == 15 && (y == 11 || y == 13)) { //Bottom stations
+                if (isDirectionDown()) slowDownAndSwitchDirection(); // Heading downwards.
                 return true;
             }
             return false;
         }
 
-        private void slowDownAndSwitchDirection() {
+        /**
+         * Slows down the train, sleeps and then switches direction.
+         */
+        private void slowDownAndSwitchDirection() throws CommandException, InterruptedException {
             setSpeed(0);
             sleep();
-            this.speed = -this.speed;
+            this.speed = - this.speed;
             setSpeed(this.speed);
-            if (this.direction == Direction.DOWN) this.direction = Direction.UP;
-            else this.direction = Direction.DOWN;
+            this.direction = Direction.getOpposite(this.direction);
         }
 
-        private boolean handleCross(int x, int y) {
+        private boolean handleCross(int x, int y) throws CommandException, InterruptedException {
 
+            // You're west or north of the cross.
             if (x == 6 && y == 6 || x == 9 && y == 5) {
-                if (this.direction == Direction.UP) {
-                    cross.release();
-                } else  {
-                    setSpeed(0);
+                if (isDirectionDown()) {
                     acquire(cross);
-                    setSpeed(speed);
+                } else {
+                    cross.release();
                 }
-
                 return true;
             }
 
+            // You're east or south of the cross.
             if (x == 11 && y == 7 || x == 10 && y == 8) {
-                if (this.direction == Direction.DOWN) {
+                if (isDirectionDown()) {
                     cross.release();
-                }
-                else {
-                    setSpeed(0);
+                } else {
                     acquire(cross);
-                    setSpeed(speed);
                 }
                 return true;
             }
             return false;
-        }
-
-        private void acquire(Semaphore s) {
-            try {
-                s.acquire();
-            } catch (InterruptedException e1) {
-                e1.printStackTrace();
-            }
         }
 
         private boolean isSensorActive(SensorEvent e) {
             return e.getStatus() == 1;
         }
-
     }
 }
