@@ -13,9 +13,11 @@ public class Lab2 {
     private final Lock lock = new ReentrantLock(true);
     private final Condition cross = lock.newCondition();
     private final Condition rightSingleRail = lock.newCondition();
-    private Boolean atCross = false;
-    private Boolean atRightSingleRail = false;
+
     private HashMap<Condition,Boolean> conditionToBoolean;
+
+
+
     private Semaphore leftSingleRail,middleDualRail,station1b,station2b;
 
 
@@ -23,8 +25,8 @@ public class Lab2 {
         tsi = TSimInterface.getInstance();
 
         conditionToBoolean = new HashMap<Condition, Boolean>();
-        conditionToBoolean.put(cross, atCross);
-        conditionToBoolean.put(rightSingleRail, atRightSingleRail);
+        conditionToBoolean.put(cross, false);
+        conditionToBoolean.put(rightSingleRail, false);
 
         leftSingleRail = new Semaphore(1);
         middleDualRail = new Semaphore(1);
@@ -239,32 +241,20 @@ public class Lab2 {
             // To the right of the cross
             if (x == 14 && y == 7) { // Top of the two
                 if (isDirectionDown()) {
-
-                    tsi.setSpeed(this.id, 0);
-                    while(atRightSingleRail) {
-                        rightSingleRail.await();
-                    }
-                    atRightSingleRail = true;
-                    TSimInterface.getInstance().setSwitch(17, 7, TSimInterface.SWITCH_RIGHT);
-                    tsi.setSpeed(this.id, this.speed);
+                    acquireAndChangeSwitch(rightSingleRail,17,7,TSimInterface.SWITCH_RIGHT);
                 } else {
-                    atRightSingleRail = false;
+                    conditionToBoolean.replace(rightSingleRail, false);
                     rightSingleRail.signal();
                 }
                 lock.unlock();
                 return true;
+
             } else if (x == 14 && y == 8) { // Bottom of the two
                 if (isDirectionDown()) {
-                    tsi.setSpeed(this.id, 0);
-                    while(atRightSingleRail) {
-                        rightSingleRail.await();
-                    }
-                    atRightSingleRail = true;
-                    TSimInterface.getInstance().setSwitch(17, 7, TSimInterface.SWITCH_LEFT);
-                    tsi.setSpeed(this.id, this.speed);
+                    acquireAndChangeSwitch(rightSingleRail,17,7,TSimInterface.SWITCH_LEFT);
                     station1b.release();
                 } else {
-                    atRightSingleRail = false;
+                    conditionToBoolean.replace(rightSingleRail, false);
                     rightSingleRail.signal();
                 }
                 lock.unlock();
@@ -274,16 +264,10 @@ public class Lab2 {
             // You're currently on the middle dual rail. Top of the two
             if (x == 12 && y == 9) {
                 if (isDirectionDown()) {
-                    atRightSingleRail = false;
+                    conditionToBoolean.replace(rightSingleRail, false);
                     rightSingleRail.signal();
                 } else {
-                    tsi.setSpeed(this.id, 0);
-                    while(atRightSingleRail) {
-                        rightSingleRail.await();
-                    }
-                    atRightSingleRail = true;
-                    TSimInterface.getInstance().setSwitch(15, 9, TSimInterface.SWITCH_RIGHT);
-                    tsi.setSpeed(this.id, this.speed);
+                    acquireAndChangeSwitch(rightSingleRail,15,9,TSimInterface.SWITCH_RIGHT);
                 }
                 lock.unlock();
                 return true;
@@ -292,15 +276,9 @@ public class Lab2 {
             // You're currently on the middle dual rail. Bottom of the two
             if (x == 13 && y == 10) {
                 if (this.direction == Direction.UP) {
-                    tsi.setSpeed(this.id, 0);
-                    while(atRightSingleRail) {
-                        rightSingleRail.await();
-                    }
-                    atRightSingleRail = true;
-                    TSimInterface.getInstance().setSwitch(15, 9, TSimInterface.SWITCH_LEFT);
-                    tsi.setSpeed(this.id, this.speed);
+                    acquireAndChangeSwitch(rightSingleRail,15,9,TSimInterface.SWITCH_LEFT);
                 } else {
-                    atRightSingleRail = false;
+                    conditionToBoolean.replace(rightSingleRail, false);
                     rightSingleRail.signal();
                 }
                 lock.unlock();
@@ -340,14 +318,9 @@ public class Lab2 {
             // You're west or north of the cross.
             if (x == 6 && y == 6 || x == 9 && y == 5) {
                 if (isDirectionDown()) {
-                    tsi.setSpeed(this.id, 0);
-                    while(atCross) {
-                        cross.await();
-                    }
-                    atCross = true;
-                    tsi.setSpeed(this.id, this.speed);
+                    acquire(cross);
                 } else {
-                    atCross = false;
+                    conditionToBoolean.replace(cross, false);
                     cross.signal();
                 }
                 lock.unlock();
@@ -357,15 +330,10 @@ public class Lab2 {
             // You're east or south of the cross.
             if (x == 11 && y == 7 || x == 10 && y == 8) {
                 if (isDirectionDown()) {
-                    atCross = false;
+                    conditionToBoolean.replace(cross, false);
                     cross.signal();
                 } else {
-                    tsi.setSpeed(this.id, 0);
-                    while(atCross) {
-                        cross.await();
-                    }
-                    atCross = true;
-                    tsi.setSpeed(this.id, this.speed);
+                    acquire(cross);
                 }
                 lock.unlock();
                 return true;
