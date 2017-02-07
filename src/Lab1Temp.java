@@ -4,11 +4,11 @@ import TSim.TSimInterface;
 
 import java.util.concurrent.Semaphore;
 
-public class Lab1 {
+public class Lab1Temp {
     private TSimInterface tsi;
     private Semaphore cross, rightSingleRail, leftSingleRail, middleDualRail, station1b, station2b;
 
-    public Lab1(Integer speed1, Integer speed2) {
+    public Lab1Temp(Integer speed1, Integer speed2) {
         tsi = TSimInterface.getInstance();
 
         cross = new Semaphore(1);
