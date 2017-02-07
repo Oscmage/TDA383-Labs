@@ -2,6 +2,7 @@ import TSim.CommandException;
 import TSim.SensorEvent;
 import TSim.TSimInterface;
 
+import java.util.HashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -12,14 +13,18 @@ public class Lab2 {
     private final Lock lock = new ReentrantLock(true);
     private final Condition cross = lock.newCondition();
     private final Condition rightSingleRail = lock.newCondition();
-    private boolean atCross = false;
-    private boolean atRightSingleRail = false;
-
+    private Boolean atCross = false;
+    private Boolean atRightSingleRail = false;
+    private HashMap<Condition,Boolean> conditionToBoolean;
     private Semaphore leftSingleRail,middleDualRail,station1b,station2b;
 
 
     public Lab2(Integer speed1, Integer speed2) {
         tsi = TSimInterface.getInstance();
+
+        conditionToBoolean = new HashMap<Condition, Boolean>();
+        conditionToBoolean.put(cross, atCross);
+        conditionToBoolean.put(rightSingleRail, atRightSingleRail);
 
         leftSingleRail = new Semaphore(1);
         middleDualRail = new Semaphore(1);
@@ -80,10 +85,30 @@ public class Lab2 {
         }
 
 
+        private void acquire(Condition c) throws CommandException, InterruptedException {
+            tsi.setSpeed(this.id, 0);
+            while(conditionToBoolean.get(c)) {
+                c.await();
+            }
+            conditionToBoolean.replace(c, true); // Update the value of the boolean
+            tsi.setSpeed(this.id, this.speed);
+        }
+
         private void acquire(Semaphore s) throws InterruptedException, CommandException {
             tsi.setSpeed(this.id, 0);
             s.acquire();
             tsi.setSpeed(this.id, speed);
+        }
+
+
+        private void acquireAndChangeSwitch(Condition c,int x, int y, int direction) throws CommandException, InterruptedException {
+            tsi.setSpeed(this.id, 0);
+            while(conditionToBoolean.get(c)) {
+                c.await();
+            }
+            conditionToBoolean.replace(c, true); // Update the value of the boolean
+            TSimInterface.getInstance().setSwitch(x, y, direction);
+            tsi.setSpeed(this.id, this.speed);
         }
 
         private void acquireAndChangeSwitch(Semaphore s, int x, int y, int direction) throws CommandException,
