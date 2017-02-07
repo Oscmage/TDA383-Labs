@@ -3,15 +3,22 @@ import TSim.SensorEvent;
 import TSim.TSimInterface;
 
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Lab2 {
     private TSimInterface tsi;
-    private Semaphore cross, rightSingleRail, leftSingleRail, middleDualRail, station1b, station2b;
+    private final Lock lock = new ReentrantLock(true);
+    private final Condition cross = lock.newCondition();
+    private boolean atCross = false;
+
+    private Semaphore rightSingleRail,leftSingleRail,middleDualRail,station1b,station2b;
+
 
     public Lab2(Integer speed1, Integer speed2) {
         tsi = TSimInterface.getInstance();
 
-        cross = new Semaphore(1);
         rightSingleRail = new Semaphore(1);
         leftSingleRail = new Semaphore(1);
         middleDualRail = new Semaphore(1);
@@ -70,6 +77,7 @@ public class Lab2 {
         private void sleep() throws InterruptedException {
             Thread.sleep(1000 + (20 * Math.abs(this.speed)));
         }
+
 
         private void acquire(Semaphore s) throws InterruptedException, CommandException {
             tsi.setSpeed(this.id, 0);
@@ -267,26 +275,41 @@ public class Lab2 {
         }
 
         private boolean handleCross(int x, int y) throws CommandException, InterruptedException {
-
+            lock.lock();
             // You're west or north of the cross.
             if (x == 6 && y == 6 || x == 9 && y == 5) {
                 if (isDirectionDown()) {
-                    acquire(cross);
+                    tsi.setSpeed(this.id, 0);
+                    while(atCross) {
+                        cross.await();
+                    }
+                    atCross = true;
+                    tsi.setSpeed(this.id, this.speed);
                 } else {
-                    cross.release();
+                    atCross = false;
+                    cross.signal();
                 }
+                lock.unlock();
                 return true;
             }
 
             // You're east or south of the cross.
             if (x == 11 && y == 7 || x == 10 && y == 8) {
                 if (isDirectionDown()) {
-                    cross.release();
+                    atCross = false;
+                    cross.signal();
                 } else {
-                    acquire(cross);
+                    tsi.setSpeed(this.id, 0);
+                    while(atCross) {
+                        cross.await();
+                    }
+                    atCross = true;
+                    tsi.setSpeed(this.id, this.speed);
                 }
+                lock.unlock();
                 return true;
             }
+            lock.unlock();
             return false;
         }
 
