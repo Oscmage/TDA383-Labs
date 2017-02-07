@@ -12,6 +12,7 @@ public class Lab2 {
     private final Lock lock = new ReentrantLock(true);
     private final Condition cross = lock.newCondition();
     private final Condition rightSingleRail = lock.newCondition();
+
     private boolean atCross = false;
     private boolean atRightSingleRail = false;
 
@@ -228,6 +229,7 @@ public class Lab2 {
                 }
                 lock.unlock();
                 return true;
+
             } else if (x == 14 && y == 8) { // Bottom of the two
                 if (isDirectionDown()) {
                     tsi.setSpeed(this.id, 0);
