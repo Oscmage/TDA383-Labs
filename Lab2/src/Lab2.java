@@ -13,12 +13,13 @@ public class Lab2 {
     private final Lock lock = new ReentrantLock(true);
     private final Condition cross = lock.newCondition();
     private final Condition rightSingleRail = lock.newCondition();
+    private final Condition leftSingleRail = lock.newCondition();
 
     private HashMap<Condition,Boolean> conditionToBoolean;
 
 
 
-    private Semaphore leftSingleRail,middleDualRail,station1b,station2b;
+    private Semaphore middleDualRail,station1b,station2b;
 
 
     public Lab2(Integer speed1, Integer speed2) {
@@ -27,8 +28,8 @@ public class Lab2 {
         conditionToBoolean = new HashMap<Condition, Boolean>();
         conditionToBoolean.put(cross, false);
         conditionToBoolean.put(rightSingleRail, false);
+        conditionToBoolean.put(leftSingleRail, false);
 
-        leftSingleRail = new Semaphore(1);
         middleDualRail = new Semaphore(1);
         station1b = new Semaphore(1);
         station2b = new Semaphore(1);
@@ -122,6 +123,11 @@ public class Lab2 {
             tsi.setSpeed(this.id, speed);
         }
 
+        private void signal(Condition c) {
+            c.signal();
+            conditionToBoolean.replace(c, false);
+        }
+
         private boolean isDirectionDown() {
             return direction == Direction.DOWN;
         }
@@ -148,11 +154,12 @@ public class Lab2 {
 
         private boolean handleLeftSingleRail(int x, int y) throws CommandException, InterruptedException {
 
+
             if (x == 7 && y == 9) { // Currently on middle dual rail, top track.
                 if (isDirectionDown()) {
                     acquireAndChangeSwitch(leftSingleRail, 4, 9, TSimInterface.SWITCH_LEFT);
                 } else {
-                    leftSingleRail.release();
+                    signal(leftSingleRail);
                 }
                 return true;
             }
@@ -161,14 +168,14 @@ public class Lab2 {
                 if (isDirectionDown()) {
                     acquireAndChangeSwitch(leftSingleRail, 4, 9, TSimInterface.SWITCH_RIGHT);
                 } else {
-                    leftSingleRail.release();
+                    signal(leftSingleRail);
                 }
                 return true;
             }
 
             if (x == 6 && y == 11) { // Top station (of the bottom ones)
                 if (isDirectionDown()) {
-                    leftSingleRail.release();
+                    signal(leftSingleRail);
                 } else {
                     acquireAndChangeSwitch(leftSingleRail, 3, 11, TSimInterface.SWITCH_LEFT);
                 }
@@ -177,7 +184,7 @@ public class Lab2 {
 
             if (x == 5 && y == 13) { // Bottom station (of the bottom ones)
                 if (isDirectionDown()) {
-                    leftSingleRail.release();
+                    signal(leftSingleRail);
                 } else {
                     acquireAndChangeSwitch(leftSingleRail, 3, 11, TSimInterface.SWITCH_RIGHT);
                     station2b.release();
