@@ -1,0 +1,18 @@
+Lab 2: Trainmonitoring
+TA383 - Concurrent Programming
+Group 6, Michelle Tran Luu, Oscar Evertsson
+
+
+
+What is the purpose of each method in the monitor?
+In our Monitor-class, we have three methods. These are described below:
+- enter:
+	This method locks the monitor when a train is trying to enter the current critical section. This is done by calling the lock() method for the lock that belongs to this monitor. If there is no train on this critical section, which means the boolean variable onTrack is false, the current train will be allowed to enter this critical section and the boolean variable will be changed to false. However, if there is already another train on this track the boolean variable onTrack will be true and therefore the conditional variable trackFree, belong in to this monitor, will be blocked using await(). Finally the lock will then be unlocked. 
+
+- leave:
+	This method is used when a train leaves a critical section. Besides from changing the boolean variable to false, it also signals the conditional variable trackFree in order to awake trains that are waiting.  
+- tryEnter:
+	The purpose of tryEnter is to check if the current track is free to enter. If the method changes the variable onTrack to true and returns true, the train will enter this track, if false it will take another path. 
+
+How many conditional variables, if any, are needed in your solution? Justify your answer.
+Since we have six monitors and every one of them has a conditional variable, there are in total six conditional variables in our solution. These variables are used for managing events for the current track. For example if a train leaves the current track, this conditional variable will signal to awake the awaiting trains. 
