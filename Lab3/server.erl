@@ -9,6 +9,8 @@
 initial_state(ServerName) ->
     #server_st{}.
 
+% Vad finns i servern: Server PID, [Channel namn], [Alla clients PID]
+
 %% ---------------------------------------------------------------------------
 
 %% handle/2 handles requests from clients
@@ -23,3 +25,4 @@ handle(St, Request) ->
     Response = "hi!",
     io:fwrite("Server is sending: ~p~n", [Response]),
     {reply, Response, St}.
+
