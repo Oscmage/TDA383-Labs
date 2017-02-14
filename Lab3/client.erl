@@ -26,37 +26,37 @@ handle(St, {connect, Server}) ->
     Response = genserver:request(ServerAtom, Data),
     io:fwrite("Client received: ~p~n", [Response]),
     % {reply, ok, St} ;
-    {reply, {error, not_implemented, "Not implemented"}, St} ;
+    {reply, {error, not_implemented, "Connect to server - Not implemented"}, St} ;
 
 %% Disconnect from server
 handle(St, disconnect) ->
     % {reply, ok, St} ;
-    {reply, {error, not_implemented, "Not implemented"}, St} ;
+    {reply, {error, not_implemented, "Disconnect from server - Not implemented"}, St} ;
 
 % Join channel
 handle(St, {join, Channel}) ->
     % {reply, ok, St} ;
-    {reply, {error, not_implemented, "Not implemented"}, St} ;
+    {reply, {error, not_implemented, "Join Channel - Not implemented"}, St} ;
 
 %% Leave channel
 handle(St, {leave, Channel}) ->
     % {reply, ok, St} ;
-    {reply, {error, not_implemented, "Not implemented"}, St} ;
+    {reply, {error, not_implemented, "Leave Channel - Not implemented"}, St} ;
 
 % Sending messages
 handle(St, {msg_from_GUI, Channel, Msg}) ->
     % {reply, ok, St} ;
-    {reply, {error, not_implemented, "Not implemented"}, St} ;
+    {reply, {error, not_implemented, "Sending messages - Not implemented"}, St} ;
 
 %% Get current nick
 handle(St, whoami) ->
     % {reply, "nick", St} ;
-    {reply, {error, not_implemented, "Not implemented"}, St} ;
+    {reply, {error, not_implemented, "Get current nick - Not implemented"}, St} ;
 
 %% Change nick
 handle(St, {nick, Nick}) ->
     % {reply, ok, St} ;
-    {reply, {error, not_implemented, "Not implemented"}, St} ;
+    {reply, {error, not_implemented, "change nick - Not implemented"}, St} ;
 
 %% Incoming message
 handle(St = #client_st { gui = GUIName }, {incoming_msg, Channel, Name, Msg}) ->
