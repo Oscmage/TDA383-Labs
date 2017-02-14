@@ -7,7 +7,7 @@
 
 %% Produce initial state
 initial_state(Nick, GUIName) ->
-    #cl_st { gui = GUIName, nick = Nick}.
+    #client_st { gui = GUIName, nick = Nick}.
 
 %% ---------------------------------------------------------------------------
 
@@ -50,7 +50,7 @@ handle(St, {msg_from_GUI, Channel, Msg}) ->
 
 %% Get current nick
 handle(St, whoami) ->
-    {reply, St#cl_st.nick, St} ;
+    {reply, St#client_st.nick, St} ;
 
 %% Change nick
 handle(St, {nick, Nick}) ->
