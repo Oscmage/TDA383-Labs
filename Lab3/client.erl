@@ -7,7 +7,7 @@
 
 %% Produce initial state
 initial_state(Nick, GUIName) ->
-    #client_st { gui = GUIName, nick = Nick}.
+    #client_st { gui = GUIName, nick = Nick, connected  = false}.
 
 %% ---------------------------------------------------------------------------
 
@@ -54,8 +54,13 @@ handle(St, whoami) ->
 
 %% Change nick
 handle(St, {nick, Nick}) ->
-    % {reply, ok, St} ;
-    {reply, {error, not_implemented, "change nick - Not implemented"}, St} ;
+  if
+    St#client_st.connected == true ->
+      {reply, ok,St#client_st{nick=Nick}};
+    true ->
+      {reply, {error, not_implemented, "Not possible to change nick when connected to the server"}, St}
+  end;
+
 
 %% Incoming message
 handle(St = #client_st { gui = GUIName }, {incoming_msg, Channel, Name, Msg}) ->
