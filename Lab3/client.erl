@@ -7,7 +7,7 @@
 
 %% Produce initial state
 initial_state(Nick, GUIName) ->
-    #client_st { gui = GUIName, nick = Nick, connected  = false}.
+    #client_st { gui = GUIName, nick = Nick, connected  = false, chatrooms = []}.
 
 %% ---------------------------------------------------------------------------
 
@@ -35,8 +35,22 @@ handle(St, disconnect) ->
 
 % Join channel
 handle(St, {join, Channel}) ->
-    % {reply, ok, St} ;
-    {reply, {error, not_implemented, "Join Channel - Not implemented"}, St} ;
+  % Not done and tested, have to add things to server.erl
+    case St#client_st.connected of
+      false ->
+        Response = genserver:request(St#client_st.serverAtom, {join, Channel, St#client_st.nick, self()}),
+        case Response of
+          user_already_joined -> {reply, {error, user_already_joined, "User has already joined this chat room"}, St};
+          joined ->
+            NewSt = St#client_st{chatrooms = St#client_st.chatrooms ++ [Channel]},
+            {reply, ok, NewSt}
+        end;
+        %försöka joina en channel
+        %se vad jag få för meddelande om user_already
+        %annars joina
+      true -> {reply, {error, not_implemented, "Server is disconnected"}, St}
+      %{reply, {error, not_implemented, "Server is disconnected"}, St}
+    end;
 
 %% Leave channel
 handle(St, {leave, Channel}) ->
