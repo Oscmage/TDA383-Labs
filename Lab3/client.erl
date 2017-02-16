@@ -8,7 +8,6 @@
 %% Produce initial state
 initial_state(Nick, GUIName) ->
     #client_st { gui = GUIName, nick = Nick, server='', chatrooms=[]}.
-
 %% ---------------------------------------------------------------------------
 
 %% handle/2 handles each kind of request from GUI
