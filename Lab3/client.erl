@@ -7,7 +7,7 @@
 
 %% Produce initial state
 initial_state(Nick, GUIName) ->
-    #client_st { gui = GUIName, nick = Nick, server='', chatrooms=[]}.
+    #client_st { gui = GUIName, nick = list_to_atom(Nick), server='', chatrooms=[]}.
 %% ---------------------------------------------------------------------------
 
 %% handle/2 handles each kind of request from GUI
@@ -58,7 +58,7 @@ handle(St, {join, Channel}) ->
   % Not done and tested, have to add things to server.erl
     case St#client_st.server /= '' of
       false ->
-        Response = genserver:request(St#client_st.serverAtom, {join, Channel, St#client_st.nick, self()}),
+        Response = genserver:request(St#client_st.server, {join, Channel, St#client_st.nick, self()}),
         case Response of
           user_already_joined -> {reply, {error, user_already_joined, "User has already joined this chat room"}, St};
           joined ->
@@ -89,7 +89,7 @@ handle(St, whoami) ->
 %% Change nick
 handle(St, {nick, Nick}) ->
   if St#client_st.server == '' ->
-      {reply, ok,St#client_st{nick=Nick}};
+      {reply, ok,St#client_st{nick=list_to_atom(Nick)}};
     true -> % else
       {reply, {error, not_implemented, "Not possible to change nick when connected to the server"}, St}
   end;
