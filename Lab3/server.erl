@@ -7,9 +7,8 @@
 
 % Produce initial state
 initial_state(ServerName) ->
-    #server_st{}.
+    #server_st{serverName = ServerName}.
 
-% Vad finns i servern: Server PID, [Channel namn], [Alla clients PID]
 
 %% ---------------------------------------------------------------------------
 
@@ -20,9 +19,22 @@ initial_state(ServerName) ->
 %% {reply, Reply, NewState}, where Reply is the reply to be sent to the client
 %% and NewState is the new state of the server.
 
+handle(St, {connect,Nick}) -> 
+    case lists:member(Nick,St#server_st.cUsers) of 
+        true -> 
+            {reply, user_already_connected,St};
+        false ->
+            {reply, ok, St#server_st{cUsers = [Nick] ++ St#server_st.cUsers}}
+    end;    
+
+handle(St, {disconnect,Nick}) ->
+    {reply,ok, St#server_st{cUsers = lists:delete(Nick,St#server_st.cUsers)}}; % Send ok, and remove the nick from the users.   
+
 handle(St, Request) ->
-    io:fwrite("Server received: ~p~n", [Request]),
+    io:fwrite("Shouldn't have gotten here, derp: ~p~n", [Request]),
     Response = "hi!",
     io:fwrite("Server is sending: ~p~n", [Response]),
     {reply, Response, St}.
+
+
 

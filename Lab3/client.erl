@@ -7,7 +7,7 @@
 
 %% Produce initial state
 initial_state(Nick, GUIName) ->
-    #client_st { gui = GUIName, nick = Nick, connected  = false}.
+    #client_st { gui = GUIName, nick = Nick, server='', channels=[]}.
 
 %% ---------------------------------------------------------------------------
 
@@ -20,19 +20,40 @@ initial_state(Nick, GUIName) ->
 
 %% Connect to server
 handle(St, {connect, Server}) ->
-    Data = "hello?",
-    io:fwrite("Client is sending: ~p~n", [Data]),
-    ServerAtom = list_to_atom(Server),
-    Response = genserver:request(ServerAtom, Data),
-    io:fwrite("Client received: ~p~n", [Response]),
-    % {reply, ok, St} ;
-    {reply, {error, not_implemented, "Connect to server - Not implemented"}, St} ;
+    case St#client_st.server == '' of
+        false -> 
+            {reply, {error,user_already_connected,"User is already connected"},St};
+        true -> 
+            try 
+                case genserver:request(list_to_atom(Server),{connect, St#client_st.nick}) of
+                    user_already_connected -> 
+                        {reply,{error,user_already_connected,"Someone with this nick is already connected"},St};
+                    ok -> 
+                        {reply,ok,St#client_st{server = list_to_atom(Server)}}
+                end
+            catch
+                _ -> {reply,{error,server_not_reached,"Server unreachable"},St}
+            end
+    end;
 
-%% Disconnect from server
+%% Disconnect from server NOT WORKING AT CURRENT STAGE
 handle(St, disconnect) ->
-    % {reply, ok, St} ;
-    {reply, {error, not_implemented, "Disconnect from server - Not implemented"}, St} ;
-
+    case St#client_st.server =:= '' of
+        true -> {reply,user_not_connected, St};
+        false -> 
+            case St#client_st.channels =:= [] of
+                true -> 
+                    try 
+                        case genserver:request(St#client_st.server,{disconnect, St#client_st.nick}) of
+                            ok -> 
+                                {reply,ok,St#client_st{server = ''}}
+                        end
+                    catch
+                          _ -> {reply,{error,server_not_reached,"Server unreachable"},St}
+                    end;
+                false -> {reply,leave_channels_first,St}
+            end
+    end;
 % Join channel
 handle(St, {join, Channel}) ->
     % {reply, ok, St} ;
@@ -41,7 +62,7 @@ handle(St, {join, Channel}) ->
 %% Leave channel
 handle(St, {leave, Channel}) ->
     % {reply, ok, St} ;
-    {reply, {error, not_implemented, "Leave Channel - Not implemented"}, St} ;
+    {reply, {error, not_implemented, "Leave Channel - Not implem aented"}, St} ;
 
 % Sending messages
 handle(St, {msg_from_GUI, Channel, Msg}) ->
@@ -54,10 +75,9 @@ handle(St, whoami) ->
 
 %% Change nick
 handle(St, {nick, Nick}) ->
-  if
-    St#client_st.connected == true ->
+  if St#client_st.server == '' ->
       {reply, ok,St#client_st{nick=Nick}};
-    true ->
+    true -> % else
       {reply, {error, not_implemented, "Not possible to change nick when connected to the server"}, St}
   end;
 
