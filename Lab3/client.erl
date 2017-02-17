@@ -55,22 +55,25 @@ handle(St, disconnect) ->
     end;
 % Join channel
 handle(St, {join, Channel}) ->
+    AlreadyJoined = lists:member(Channel,St#client_st.chatrooms),
   % Not done and tested, have to add things to server.erl
-    case St#client_st.server == '' of
-      false ->
-        io:fwrite("Should get here: ~p~n", [St]),
-        Response = genserver:request(St#client_st.server, {join, Channel, St#client_st.nick, self()}),
-        case Response of
-          user_already_joined -> {reply, {error, user_already_joined, "User has already joined this chat room"}, St};
-          joined ->
-            NewSt = St#client_st{chatrooms = St#client_st.chatrooms ++ [Channel]},
-            {reply, ok, NewSt}
-        end;
-        %försöka joina en channel
-        %se vad jag få för meddelande om user_already
-        %annars joina
-      true -> {reply, {error, not_implemented, "Server is disconnected"}, St}
-      %{reply, {error, not_implemented, "Server is disconnected"}, St}
+    if
+        St#client_st.server == '' -> 
+            {reply, {error, not_implemented, "Server is disconnected"}, St};
+        AlreadyJoined == true -> 
+            io:fwrite("Already connect to this channel: ~p~n", [St]),
+            {reply, {error, user_already_joined, "User has already joined this chat room"}, St};
+        true -> 
+            try 
+                Response = genserver:request(St#client_st.server, {join, Channel, St#client_st.nick, self()}),
+                case Response of
+                    joined ->
+                        NewSt = St#client_st{chatrooms = St#client_st.chatrooms ++ [Channel]},
+                        {reply, ok, NewSt}
+                end
+            catch
+                _ -> {reply,{error,server_not_reached,"Server unreachable"},St}
+            end
     end;
 
 %% Leave channel
@@ -80,8 +83,18 @@ handle(St, {leave, Channel}) ->
 
 % Sending messages
 handle(St, {msg_from_GUI, Channel, Msg}) ->
-    % {reply, ok, St} ;
-    {reply, {error, not_implemented, "Sending messages - Not implemented"}, St} ;
+    IsMember = lists:member(Channel,St#client_st.chatrooms),
+    if 
+        IsMember == false ->
+            {reply, {error, user_not_joined, "Can't send a message in a channel you're not in"},St};
+        true ->
+            ChannelAtom = getChannelPid(St,Channel),
+            try 
+                genserver:request(ChannelAtom, {message, St#client_st.nick, self()}),{reply,ok,St}
+            catch
+                _ -> {reply,{error,server_not_reached,"Server unreachable"},St}
+            end
+    end;
 
 %% Get current nick
 handle(St, whoami) ->
@@ -100,3 +113,7 @@ handle(St, {nick, Nick}) ->
 handle(St = #client_st { gui = GUIName }, {incoming_msg, Channel, Name, Msg}) ->
     gen_server:call(list_to_atom(GUIName), {msg_to_GUI, Channel, Name++"> "++Msg}),
     {reply, ok, St}.
+
+%% Retrieves the channel PID by convention from the server.erl 
+getChannelPid(St,Channel) ->
+    list_to_atom(St#client_st.server ++ Channel).
