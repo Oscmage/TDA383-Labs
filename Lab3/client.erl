@@ -56,8 +56,9 @@ handle(St, disconnect) ->
 % Join channel
 handle(St, {join, Channel}) ->
   % Not done and tested, have to add things to server.erl
-    case St#client_st.server /= '' of
+    case St#client_st.server == '' of
       false ->
+        io:fwrite("Should get here: ~p~n", [St]),
         Response = genserver:request(St#client_st.server, {join, Channel, St#client_st.nick, self()}),
         case Response of
           user_already_joined -> {reply, {error, user_already_joined, "User has already joined this chat room"}, St};

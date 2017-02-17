@@ -30,6 +30,18 @@ handle(St, {connect,Nick}) ->
 handle(St, {disconnect,Nick}) ->
     {reply,ok, St#server_st{cUsers = lists:delete(Nick,St#server_st.cUsers)}}; % Send ok, and remove the nick from the users.   
 
+
+handle(St, {join,Channel,Nick,PID}) ->
+    io:fwrite("Join handler, derp: ~p~n", [St]),
+    ChannelAtom = list_to_atom(St#server_st.serverName ++ Channel),
+    case whereis(ChannelAtom) of 
+        undefined -> 
+            genserver:start(ChannelAtom, channel:initial_state(ChannelAtom), fun channel:handle/2);
+        true -> 
+            io:fwrite("Shouldn't have gotten here, derp: ~p~n", [St])
+    end,
+    {reply, genserver:request(ChannelAtom,{join, Nick,PID}), St};
+
 handle(St, Request) ->
     io:fwrite("Shouldn't have gotten here, derp: ~p~n", [Request]),
     Response = "hi!",
