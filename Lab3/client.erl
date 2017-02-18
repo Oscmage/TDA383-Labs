@@ -53,6 +53,7 @@ handle(St, disconnect) ->
                 false -> {reply,leave_channels_first,St}
             end
     end;
+
 % Join channel
 handle(St, {join, Channel}) ->
     AlreadyJoined = lists:member(Channel,St#client_st.chatrooms),
@@ -78,8 +79,19 @@ handle(St, {join, Channel}) ->
 
 %% Leave channel
 handle(St, {leave, Channel}) ->
-    % {reply, ok, St} ;
-    {reply, {error, not_implemented, "Leave Channel - Not implem aented"}, St} ;
+    case St#client_st.server of
+        '' ->
+            {reply, {error, not_implemented, "Server is disconnected"}, St};
+        _ ->
+            Response = genserver:request(St#client_st.server, {leave, Channel, St#client_st.nick, self()}),
+            case Response of
+                user_not_joined ->
+                    {reply, {error, user_not_joined, "Not possible to leave from other chatrooms but the current one"}, St};
+                left ->
+                    NewSt = St#client_st{chatrooms = lists:delete(Channel, St#client_st.chatrooms)},
+                    {reply, ok, NewSt}
+            end
+    end;
 
 % Sending messages
 handle(St, {msg_from_GUI, Channel, Msg}) ->

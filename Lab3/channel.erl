@@ -10,12 +10,22 @@ initial_state(ChannelName) ->
     #channel_st{name = ChannelName}.
 
 handle(St,{join,Nick,PID}) ->
-    case lists:member(x,St#channel_st.cUsers) of 
+    case lists:member(Nick,St#channel_st.cUsers) of
         true -> 
             {reply,user_already_joined,St};
         false ->
-            St#channel_st{cUsers = [Nick] ++ St#channel_st.cUsers},
-            {reply,joined,St}
+            NewState = St#channel_st{cUsers = [Nick] ++ St#channel_st.cUsers},
+            {reply,joined,NewState}
+    end;
+
+handle(St,{leave,Nick,PID}) ->
+    case lists:member(Nick,St#channel_st.cUsers) of
+        true ->
+            NewList = lists:delete(Nick,St#channel_st.cUsers),
+            NewState = St#channel_st{cUsers = NewList},
+            {reply, left, NewState};
+        false ->
+            {reply, user_not_joined, St}
     end;
 
 handle(St, Request) ->
