@@ -13,14 +13,14 @@ initial_state(ChannelName) ->
 handle(St,{join,PID}) ->
     io:fwrite("Someone wants to join the channel in the process itself: ~p~n", [St]),
     case lists:member(PID,St#channel_st.cUsers) of
-        true -> 
+        true ->
             {reply,user_already_joined,St};
         false ->
             NewState = St#channel_st{cUsers = [PID] ++ St#channel_st.cUsers},
             {reply,joined,NewState}
     end;
 
-handle(St,{leave,PID}) ->
+handle(St,{leave, PID}) ->
     case lists:member(PID,St#channel_st.cUsers) of
         true ->
             NewList = lists:delete(PID,St#channel_st.cUsers),
@@ -34,12 +34,11 @@ handle(St,{message,Msg,Nick,PID}) ->
     [ sendMessage(E, Nick , St#channel_st.name, Msg) || E <- St#channel_st.cUsers, E /= PID],{reply, ok,St};
 
 handle(St, Request) ->
-    io:fwrite("Shouldn't have gotten here, derp: ~p~n", [Request]),
+    io:fwrite("In channel.erl, Shouldn't have gotten here, derp: ~p~n", [Request]),
     Response = "hi!",
     io:fwrite("Server is sending: ~p~n", [Response]),
     {reply, joined, St}.
 
-sendMessage(PID,From,Channel,Msg) -> 
+sendMessage(PID,From,Channel,Msg) ->
     io:fwrite("Spreading message: ~p~n", [PID]),
     spawn (fun() -> genserver:request(PID,{incoming_msg, Channel, atom_to_list(From), Msg}) end).
-    

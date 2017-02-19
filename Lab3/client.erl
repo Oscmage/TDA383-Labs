@@ -20,14 +20,14 @@ initial_state(Nick, GUIName) ->
 %% Connect to server
 handle(St, {connect, Server}) ->
     case St#client_st.server == '' of
-        false -> 
+        false ->
             {reply, {error,user_already_connected,"User is already connected"},St};
-        true -> 
-            try 
+        true ->
+            try
                 case genserver:request(list_to_atom(Server),{connect, St#client_st.nick}) of
-                    user_already_connected -> 
+                    user_already_connected ->
                         {reply,{error,user_already_connected,"Someone with this nick is already connected"},St};
-                    ok -> 
+                    ok ->
                         io:fwrite("Connected to server: ~p~n", [St]),
                         {reply,ok,St#client_st{server = list_to_atom(Server)}}
                 end
@@ -40,12 +40,12 @@ handle(St, {connect, Server}) ->
 handle(St, disconnect) ->
     case St#client_st.server =:= '' of
         true -> {reply,user_not_connected, St};
-        false -> 
+        false ->
             case St#client_st.chatrooms =:= [] of
-                true -> 
-                    try 
+                true ->
+                    try
                         case genserver:request(St#client_st.server,{disconnect, St#client_st.nick}) of
-                            ok -> 
+                            ok ->
                                 {reply,ok,St#client_st{server = ''}}
                         end
                     catch
@@ -60,13 +60,13 @@ handle(St, {join, Channel}) ->
     AlreadyJoined = lists:member(Channel,St#client_st.chatrooms),
   % Not done and tested, have to add things to server.erl
     if
-        St#client_st.server == '' -> 
+        St#client_st.server == '' ->
             {reply, {error, not_implemented, "Server is disconnected"}, St};
-        AlreadyJoined == true -> 
+        AlreadyJoined == true ->
             io:fwrite("Already connect to this channel: ~p~n", [St]),
             {reply, {error, user_already_joined, "User has already joined this chat room"}, St};
-        true -> 
-            try 
+        true ->
+            try
                 Response = genserver:request(St#client_st.server, {join, Channel, self()}),
                 case Response of
                     joined ->
@@ -84,7 +84,8 @@ handle(St, {leave, Channel}) ->
         '' ->
             {reply, {error, not_implemented, "Server is disconnected"}, St};
         _ ->
-            Response = genserver:request(St#client_st.server, {leave, Channel, self()}),
+            ChannelAtom = list_to_atom(atom_to_list(St#client_st.server) ++ Channel),
+            Response = genserver:request(ChannelAtom, {leave, self()}),
             case Response of
                 user_not_joined ->
                     {reply, {error, user_not_joined, "Not possible to leave from other chatrooms but the current one"}, St};
@@ -97,14 +98,14 @@ handle(St, {leave, Channel}) ->
 % Sending messages
 handle(St, {msg_from_GUI, Channel, Msg}) ->
     IsMember = lists:member(Channel,St#client_st.chatrooms),
-    if 
+    if
         IsMember == false ->
             {reply, {error, user_not_joined, "Can't send a message in a channel you're not in"},St};
         true ->
             ChannelAtom = list_to_atom(atom_to_list(St#client_st.server) ++ Channel),
-            try 
+            try
                 genserver:request(ChannelAtom, {message, Msg, St#client_st.nick, self()}),
-                {reply,ok,St} 
+                {reply,ok,St}
             catch
                 _ -> {reply,{error,server_not_reached,"Server unreachable"},St}
             end
@@ -128,4 +129,4 @@ handle(St = #client_st { gui = GUIName }, {incoming_msg, Channel, Name, Msg}) ->
     gen_server:call(list_to_atom(GUIName),io:fwrite("Got message: ~p~n", [Name]), {msg_to_GUI, Channel, Name++"> "++Msg}),
     {reply, ok, St}.
 
-%% Retrieves the channel PID by convention from the server.erl 
+%% Retrieves the channel PID by convention from the server.erl
