@@ -33,27 +33,27 @@ handle(St, {disconnect,Nick}) ->
     {reply,ok, St#server_st{cUsers = lists:delete(Nick,St#server_st.cUsers)}}; % Send ok, and remove the nick from the users.   
 
 
-handle(St, {join,Channel,Nick,PID}) ->
+handle(St, {join,Channel,PID}) ->
     io:fwrite("Someone wants to join a channel: ~p~n", [St]),
     ChannelAtom = list_to_atom(St#server_st.serverName ++ Channel),
     ChannelPID = whereis(ChannelAtom),
     case ChannelPID of 
         undefined -> 
-            genserver:start(ChannelAtom, channel:initial_state(ChannelAtom), fun channel:handle/2);
+            genserver:start(ChannelAtom, channel:initial_state(Channel), fun channel:handle/2);
         _ ->
             ok
     end,
     {reply, genserver:request(ChannelAtom,{join, PID}), St};
 
 
-handle(St, {leave,Channel,Nick,PID}) ->
+handle(St, {leave,Channel,PID}) ->
     io:fwrite("Leave handler: ~p~n", [St]),
     ChannelAtom = list_to_atom(St#server_st.serverName ++ Channel),
     case whereis(ChannelAtom) of
         undefined ->
             io:fwrite("No such channel");
             _ ->
-            {reply, genserver:request(ChannelAtom, {leave, Nick,PID}), St}
+            {reply, genserver:request(ChannelAtom, {leave, PID}), St}
     end;
 
 handle(St, Request) ->

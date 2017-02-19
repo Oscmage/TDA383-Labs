@@ -67,7 +67,7 @@ handle(St, {join, Channel}) ->
             {reply, {error, user_already_joined, "User has already joined this chat room"}, St};
         true -> 
             try 
-                Response = genserver:request(St#client_st.server, {join, Channel, St#client_st.nick, self()}),
+                Response = genserver:request(St#client_st.server, {join, Channel, self()}),
                 case Response of
                     joined ->
                         NewSt = St#client_st{chatrooms = St#client_st.chatrooms ++ [Channel]},
@@ -84,7 +84,7 @@ handle(St, {leave, Channel}) ->
         '' ->
             {reply, {error, not_implemented, "Server is disconnected"}, St};
         _ ->
-            Response = genserver:request(St#client_st.server, {leave, Channel, St#client_st.nick, self()}),
+            Response = genserver:request(St#client_st.server, {leave, Channel, self()}),
             case Response of
                 user_not_joined ->
                     {reply, {error, user_not_joined, "Not possible to leave from other chatrooms but the current one"}, St};
@@ -125,7 +125,7 @@ handle(St, {nick, Nick}) ->
 
 %% Incoming message
 handle(St = #client_st { gui = GUIName }, {incoming_msg, Channel, Name, Msg}) ->
-    gen_server:call(list_to_atom(GUIName), {msg_to_GUI, Channel, Name++"> "++Msg}),
+    gen_server:call(list_to_atom(GUIName),io:fwrite("Got message: ~p~n", [Name]), {msg_to_GUI, Channel, Name++"> "++Msg}),
     {reply, ok, St}.
 
 %% Retrieves the channel PID by convention from the server.erl 
