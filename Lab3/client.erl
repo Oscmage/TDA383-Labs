@@ -28,6 +28,7 @@ handle(St, {connect, Server}) ->
                     user_already_connected -> 
                         {reply,{error,user_already_connected,"Someone with this nick is already connected"},St};
                     ok -> 
+                        io:fwrite("Connected to server: ~p~n", [St]),
                         {reply,ok,St#client_st{server = list_to_atom(Server)}}
                 end
             catch
@@ -100,9 +101,10 @@ handle(St, {msg_from_GUI, Channel, Msg}) ->
         IsMember == false ->
             {reply, {error, user_not_joined, "Can't send a message in a channel you're not in"},St};
         true ->
-            ChannelAtom = getChannelPid(St,Channel),
+            ChannelAtom = list_to_atom(atom_to_list(St#client_st.server) ++ Channel),
             try 
-                genserver:request(ChannelAtom, {message, St#client_st.nick, self()}),{reply,ok,St}
+                genserver:request(ChannelAtom, {message, Msg, St#client_st.nick, self()}),
+                {reply,ok,St} 
             catch
                 _ -> {reply,{error,server_not_reached,"Server unreachable"},St}
             end
@@ -127,5 +129,3 @@ handle(St = #client_st { gui = GUIName }, {incoming_msg, Channel, Name, Msg}) ->
     {reply, ok, St}.
 
 %% Retrieves the channel PID by convention from the server.erl 
-getChannelPid(St,Channel) ->
-    list_to_atom(St#client_st.server ++ Channel).

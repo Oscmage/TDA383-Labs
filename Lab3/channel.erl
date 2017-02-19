@@ -9,6 +9,7 @@
 initial_state(ChannelName) ->
     #channel_st{name = ChannelName}.
 
+
 handle(St,{join,Nick,PID}) ->
     case lists:member(Nick,St#channel_st.cUsers) of
         true -> 
@@ -33,3 +34,8 @@ handle(St, Request) ->
     Response = "hi!",
     io:fwrite("Server is sending: ~p~n", [Response]),
     {reply, joined, St}.
+
+sendMessage(PID,From,Channel,Msg) -> 
+    io:fwrite("Spreading message: ~p~n", [Msg]),
+    spawn (fun() -> genserver:request(PID,{incoming_message, Channel, From, Msg}) end).
+    

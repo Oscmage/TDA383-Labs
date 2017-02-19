@@ -22,8 +22,10 @@ initial_state(ServerName) ->
 handle(St, {connect,Nick}) -> 
     case lists:member(Nick,St#server_st.cUsers) of 
         true -> 
+            io:fwrite("Connected users: ~p~n", [St]),
             {reply, user_already_connected,St};
         false ->
+            io:fwrite("Connected users: ~p~n", [St]),
             {reply, ok, St#server_st{cUsers = [Nick] ++ St#server_st.cUsers}}
     end;    
 
@@ -32,15 +34,16 @@ handle(St, {disconnect,Nick}) ->
 
 
 handle(St, {join,Channel,Nick,PID}) ->
-    io:fwrite("Join handler, derp: ~p~n", [St]),
+    io:fwrite("Someone wants to join a channel: ~p~n", [St]),
     ChannelAtom = list_to_atom(St#server_st.serverName ++ Channel),
-    case whereis(ChannelAtom) of 
+    ChannelPID = whereis(ChannelAtom),
+    case ChannelPID of 
         undefined -> 
             genserver:start(ChannelAtom, channel:initial_state(ChannelAtom), fun channel:handle/2);
         _ ->
             ok
     end,
-    {reply, genserver:request(ChannelAtom,{join, Nick,PID}), St};
+    {reply, genserver:request(ChannelAtom,{join, PID}), St};
 
 
 handle(St, {leave,Channel,Nick,PID}) ->
