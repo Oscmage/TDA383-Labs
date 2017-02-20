@@ -28,11 +28,11 @@ handle(St, {connect, Server}) ->
                     {reply,{error,server_not_reached,"Server unreachable"},St};
                 true ->
                     try
-                        case genserver:request(list_to_atom(Server),{connect, St#client_st.nick}) of
+                        Result = genserver:request(list_to_atom(Server),{connect, St#client_st.nick}),
+                        case Result of
                             user_already_connected ->
                                 {reply,{error,user_already_connected,"Someone with this nick is already connected"},St};
                             ok ->
-                                io:fwrite("Connected to server: ~p~n", [St]),
                                 {reply,ok,St#client_st{server = list_to_atom(Server)}}
                         end
                     catch
