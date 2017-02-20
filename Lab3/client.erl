@@ -23,21 +23,17 @@ handle(St, {connect, Server}) ->
         false ->
             {reply, {error,user_already_connected,"User is already connected"},St};
         true ->
-            DoesServerExist = whereis(list_to_atom(Server)),
-            if  DoesServerExist == undefined -> 
-                    {reply,{error,server_not_reached,"Server unreachable"},St};
-                true ->
-                    try
-                        Result = genserver:request(list_to_atom(Server),{connect, St#client_st.nick}),
-                        case Result of
-                            user_already_connected ->
-                                {reply,{error,user_already_connected,"Someone with this nick is already connected"},St};
-                            ok ->
-                                {reply,ok,St#client_st{server = list_to_atom(Server)}}
-                        end
-                    catch
-                         _ -> {reply,{error,server_not_reached,"Server unreachable"},St}
-                    end
+             try
+                Response = genserver:request(list_to_atom(Server),{connect, St#client_st.nick}),
+                case Response of
+                    nick_taken ->
+                        {reply,{error,nick_taken,"Someone with this nick is already connected"},St};
+                    user_is_connected ->
+                        io:fwrite("Connected to server: ~p~n", [St]),
+                        {reply,ok,St#client_st{server = list_to_atom(Server)}}
+                end
+            catch
+                 _:_ -> {reply,{error,server_not_reached,"Server unreachable"},St}
             end
     end;
 

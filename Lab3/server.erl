@@ -22,10 +22,15 @@ initial_state(ServerName) ->
 handle(St, {connect,Nick}) ->
     case lists:member(Nick,St#server_st.cUsers) of
         true ->
-            {reply, user_already_connected,St};
+            % io:fwrite("In true connect server, Connected users: ~p~n", [St]),
+            Response = nick_taken,
+            NewSt = St;
         false ->
-            {reply, ok, St#server_st{cUsers = [Nick] ++ St#server_st.cUsers}}
-    end;
+            % io:fwrite("In false connect server, Connected users: ~p~n", [St]),
+            NewSt = St#server_st{cUsers=[Nick]++St#server_st.cUsers},
+            Response = user_is_connected
+    end,
+    {reply, Response, NewSt};
 
 handle(St, {disconnect,Nick}) ->
     {reply,ok, St#server_st{cUsers = lists:delete(Nick,St#server_st.cUsers)}}; % Send ok, and remove the nick from the users.
