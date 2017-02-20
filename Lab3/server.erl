@@ -23,7 +23,7 @@ handle(St, {connect,Nick}) ->
     case lists:member(Nick,St#server_st.cUsers) of
         true ->
             io:fwrite("Connected users: ~p~n", [St]),
-            {reply, user_already_connected,St};
+            {reply, nick_taken,St};
         false ->
             io:fwrite("Connected users: ~p~n", [St]),
             {reply, ok, St#server_st{cUsers = [Nick] ++ St#server_st.cUsers}}

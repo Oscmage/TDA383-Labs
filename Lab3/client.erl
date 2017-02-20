@@ -39,7 +39,7 @@ handle(St, {connect, Server}) ->
 %% Disconnect from server NOT WORKING AT CURRENT STAGE
 handle(St, disconnect) ->
     case St#client_st.server =:= '' of
-        true -> {reply,user_not_connected, St};
+        true -> {reply,{error,user_not_connected,"Can't disconnect from a server that you aren't connected to"}, St};
         false ->
             case St#client_st.chatrooms =:= [] of
                 true ->
@@ -51,7 +51,7 @@ handle(St, disconnect) ->
                     catch
                           _ -> {reply,{error,server_not_reached,"Server unreachable"},St}
                     end;
-                false -> {reply,leave_channels_first,St}
+                false -> {reply,{error,leave_channels_first,"Should leave channels first"},St}
             end
     end;
 
