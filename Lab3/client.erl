@@ -58,7 +58,6 @@ handle(St, disconnect) ->
 % Join channel
 handle(St, {join, Channel}) ->
     AlreadyJoined = lists:member(Channel,St#client_st.chatrooms),
-  % Not done and tested, have to add things to server.erl
     if
         St#client_st.server == '' ->
             {reply, {error, not_implemented, "Server is disconnected"}, St};
@@ -113,20 +112,21 @@ handle(St, {msg_from_GUI, Channel, Msg}) ->
 
 %% Get current nick
 handle(St, whoami) ->
-    {reply, St#client_st.nick, St} ;
+    Nick = atom_to_list(St#client_st.nick),
+    {reply, Nick, St} ;
 
 %% Change nick
 handle(St, {nick, Nick}) ->
   if St#client_st.server == '' ->
       {reply, ok,St#client_st{nick=list_to_atom(Nick)}};
     true -> % else
-      {reply, {error, not_implemented, "Not possible to change nick when connected to the server"}, St}
+      {reply, {error, user_already_connected, "Not possible to change nick when connected to the server"}, St}
   end;
 
 
 %% Incoming message
 handle(St = #client_st { gui = GUIName }, {incoming_msg, Channel, Name, Msg}) ->
-    gen_server:call(list_to_atom(GUIName),io:fwrite("Got message: ~p~n", [Name]), {msg_to_GUI, Channel, Name++"> "++Msg}),
+    gen_server:call(list_to_atom(GUIName), {msg_to_GUI, Channel, Name++"> "++Msg}),
     {reply, ok, St}.
 
 %% Retrieves the channel PID by convention from the server.erl

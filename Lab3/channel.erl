@@ -31,7 +31,25 @@ handle(St,{leave, PID}) ->
     end;
 
 handle(St,{message,Msg,Nick,PID}) ->
-    [ sendMessage(E, Nick , St#channel_st.name, Msg) || E <- St#channel_st.cUsers, E /= PID],{reply, ok,St};
+    [ sendMessage(E, Nick , St#channel_st.name, Msg) || E <- St#channel_st.cUsers, E /= PID],
+    {reply, ok,St};
+
+% handle(St,{message, Msg, Nick, PID} ->
+%     case lists:any(fun(E) -> E == ClientName end, St#chatroom_st.clients) of
+%       true ->
+%         NewSt = St,
+%         CallClients = fun(PID) ->
+%           case PID /= ClientId of
+%             true -> spawn(fun() -> genserver:request(PID, {incoming_msg, Channel, ClientName,Msg}) end);
+%             false -> 0
+%           end
+%         end,
+%         lists:map(CallClients, St#chatroom_st.clientIds),
+%         Response = "success";
+%       false ->
+%         NewSt = St,
+%         Response = user_not_joined
+%     end
 
 handle(St, Request) ->
     io:fwrite("In channel.erl, Shouldn't have gotten here, derp: ~p~n", [Request]),
