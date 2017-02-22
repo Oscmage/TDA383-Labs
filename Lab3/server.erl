@@ -20,9 +20,9 @@ initial_state(ServerName) ->
 %% and NewState is the new state of the server.
 
 handle(St, {connect, Nick, Pid}) ->
-    Connected = lists:keymember(Pid, 2, St#server_st.cUsers),
-    if Connected == true ->
-        {reply, {error,user_already_connected,"User is already connected"}, St};
+    UserConnected = lists:keymember(Pid, 2, St#server_st.cUsers),
+    if UserConnected == true ->
+        {reply, {error, user_already_connected, "User is already connected"}, St};
       true -> % else
         NickTaken = lists:keymember(Nick, 1, St#server_st.cUsers),
         case NickTaken of
