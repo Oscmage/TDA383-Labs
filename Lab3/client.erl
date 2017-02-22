@@ -61,8 +61,7 @@ handle(St, disconnect) ->
 
 %% Join channel
 % Join a user to a channel by first checking if the user is connected to a server
-% Then it ensures that the user has not already joined this channel
-
+% Then it receives request data in order to determine if the user can join or not
 handle(St, {join, Channel}) ->
     if
         St#client_st.server == '' ->
@@ -75,7 +74,7 @@ handle(St, {join, Channel}) ->
                         NewSt = St#client_st{chatrooms = St#client_st.chatrooms ++ [Channel]},
                         {reply, ok, NewSt};
                     user_already_joined ->
-                        {reply, user_already_joined, St}
+                        {reply, {error, user_already_joined, "User has already joined this chat room"}, St}
                 end
             catch
                 _:_ -> {reply,{error,server_not_reached,"Server unreachable in join-process"},St}
@@ -83,23 +82,32 @@ handle(St, {join, Channel}) ->
     end;
 
 %% Leave channel
+% Letting the user leaves a channel if there is a server connected to this user,
+% Then it checks if the server is a member of the channel that the user wants to leave from
+% If the user leaves this channel, then a new state will be sent in order to replace the old state with a new state with new changes
 handle(St, {leave, Channel}) ->
     case St#client_st.server of
         '' ->
-            {reply, {error, not_implemented, "Server is disconnected"}, St};
+            {reply, {error, server_not_reached, "Server is disconnected"}, St};
         _ ->
             ChannelAtom = list_to_atom(atom_to_list(St#client_st.server) ++ Channel),
-            Response = genserver:request(ChannelAtom, {leave, self()}),
-            case Response of
-                user_not_joined ->
-                    {reply, {error, user_not_joined, "Not possible to leave from other chatrooms but the current one"}, St};
-                left ->
-                    NewSt = St#client_st{chatrooms = lists:delete(Channel, St#client_st.chatrooms)},
-                    {reply, ok, NewSt}
+            try
+              Response = genserver:request(ChannelAtom, {leave, self()}),
+              case Response of
+                  user_not_joined ->
+                      {reply, {error, user_not_joined, "Not possible to leave from other chatrooms but the current one"}, St};
+                  left ->
+                      NewSt = St#client_st{chatrooms = lists:delete(Channel, St#client_st.chatrooms)},
+                      {reply, ok, NewSt}
+              end
+            catch
+              _:_ -> {reply,{error,server_not_reached,"Server unreachable in leave-process"},St}
             end
     end;
 
-% Sending messages
+%% Sending messages
+% If the user is not a member of this chatroom, then the user can't send messages and an error message will be shown
+% If the user is a member, then a
 handle(St, {msg_from_GUI, Channel, Msg}) ->
     IsMember = lists:member(Channel,St#client_st.chatrooms),
     if
