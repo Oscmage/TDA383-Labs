@@ -11,8 +11,7 @@ initial_state(ChannelName) ->
 
 
 handle(St,{join,PID}) ->
-    io:fwrite("Someone wants to join the channel in the process itself: ~p~n", [St]),
-    case lists:member(PID,St#channel_st.cUsers) of
+    case lists:member(PID, St#channel_st.cUsers) of % Is user already within this channel?
         true ->
             {reply,user_already_joined,St};
         false ->

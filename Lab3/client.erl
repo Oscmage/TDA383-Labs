@@ -50,7 +50,7 @@ handle(St, disconnect) ->
                                 {reply,ok,St#client_st{server = ''}}
                         end
                     catch
-                          _ -> {reply,{error,server_not_reached,"Server unreachable"},St}
+                          _:_ -> {reply,{error,server_not_reached,"Server unreachable"},St}
                     end;
                 false -> {reply,{error,leave_channels_first,"Should leave channels first"},St}
             end
@@ -74,7 +74,7 @@ handle(St, {join, Channel}) ->
                         {reply, ok, NewSt}
                 end
             catch
-                _ -> {reply,{error,server_not_reached,"Server unreachable"},St}
+                _:_ -> {reply,{error,server_not_reached,"Server unreachable"},St}
             end
     end;
 
@@ -107,7 +107,7 @@ handle(St, {msg_from_GUI, Channel, Msg}) ->
                 genserver:request(ChannelAtom, {message, Msg, St#client_st.nick, self()}),
                 {reply,ok,St}
             catch
-                _ -> {reply,{error,server_not_reached,"Server unreachable"},St}
+                _:_ -> {reply,{error,server_not_reached,"Server unreachable"},St}
             end
     end;
 

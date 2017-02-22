@@ -33,7 +33,7 @@ handle(St, {connect,Nick}) ->
     {reply, Response, NewSt};
 
 handle(St, {disconnect,Nick}) ->
-    {reply,ok, St#server_st{cUsers = lists:delete(Nick,St#server_st.cUsers)}}; % Send ok, and remove the nick from the users.
+    {reply,ok, St#server_st{cUsers = lists:delete(Nick, St#server_st.cUsers)}}; % Send ok, and remove the nick from the users.
 
 
 handle(St, {join,Channel,PID}) ->
