@@ -19,23 +19,21 @@ initial_state(Nick, GUIName) ->
 
 %% Connect to server
 handle(St, {connect, Server}) ->
-    case St#client_st.server == '' of
-        false ->
-            {reply, {error,user_already_connected,"User is already connected"},St};
-        true ->
-             try
-                Response = genserver:request(list_to_atom(Server),{connect, St#client_st.nick}),
-                case Response of
-                    nick_taken ->
-                        {reply,{error,nick_taken,"Someone with this nick is already connected"},St};
-                    user_is_connected ->
-                        io:fwrite("Connected to server: ~p~n", [St]),
-                        {reply,ok,St#client_st{server = list_to_atom(Server)}}
-                end
-            catch
-                 _:_ -> {reply,{error,server_not_reached,"Server unreachable"},St}
-            end
-    end;
+  try
+    Response = genserver:request(list_to_atom(Server), {connect, St#client_st.nick, self()}),
+    case Response of
+        user_already_connected ->
+          {reply, {error,user_already_connected,"User is already connected"}, St};
+        nick_taken ->
+            {reply,{error,nick_taken,"Someone with this nick is already connected"},St};
+        user_is_connected ->
+            io:fwrite("Connected to server: ~p~n", [St]),
+            {reply,ok,St#client_st{server = list_to_atom(Server)}}
+    end
+  catch
+     _:_ -> {reply,{error,server_not_reached,"Server unreachable4"},St}
+  end;
+
 
 %% Disconnect from server NOT WORKING AT CURRENT STAGE
 handle(St, disconnect) ->
@@ -45,12 +43,12 @@ handle(St, disconnect) ->
             case St#client_st.chatrooms =:= [] of
                 true ->
                     try
-                        case genserver:request(St#client_st.server,{disconnect, St#client_st.nick}) of
+                        case genserver:request(St#client_st.server,{disconnect, St#client_st.nick, self()}) of
                             ok ->
                                 {reply,ok,St#client_st{server = ''}}
                         end
                     catch
-                          _:_ -> {reply,{error,server_not_reached,"Server unreachable"},St}
+                          _:_ -> {reply,{error,server_not_reached,"Server unreachable1"},St}
                     end;
                 false -> {reply,{error,leave_channels_first,"Should leave channels first"},St}
             end
@@ -74,7 +72,7 @@ handle(St, {join, Channel}) ->
                         {reply, ok, NewSt}
                 end
             catch
-                _:_ -> {reply,{error,server_not_reached,"Server unreachable"},St}
+                _:_ -> {reply,{error,server_not_reached,"Server unreachable2"},St}
             end
     end;
 
@@ -107,7 +105,7 @@ handle(St, {msg_from_GUI, Channel, Msg}) ->
                 genserver:request(ChannelAtom, {message, Msg, St#client_st.nick, self()}),
                 {reply,ok,St}
             catch
-                _:_ -> {reply,{error,server_not_reached,"Server unreachable"},St}
+                _:_ -> {reply,{error,server_not_reached,"Server unreachable3"},St}
             end
     end;
 
