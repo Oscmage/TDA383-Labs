@@ -29,29 +29,31 @@ handle(St, {connect, Nick, Pid}) ->
             true -> % Nick taken by other user
                 {reply, nick_taken, St};
             false -> % Nick not taken free to take
-                NewState = St#server_st{cUsers=[{Nick, Pid}]++St#server_st.cUsers},
+                NewState = St#server_st{cUsers = [{Nick, Pid}] ++ St#server_st.cUsers},
                 {reply, user_is_connected, NewState}
         end
     end;
 
 handle(St, {disconnect,Nick,Pid}) ->
-    {reply,ok, St#server_st{cUsers = lists:delete({Nick,Pid}, St#server_st.cUsers)}}; % Send ok, and remove the nick from the users.
+    NewState = St#server_st{cUsers = lists:delete({Nick,Pid}, St#server_st.cUsers)}, % rmove the user from the users list
+    {reply,ok, NewState}; % Send ok and use the updated state
 
 
 handle(St, {join,Channel,PID}) ->
-    io:fwrite("Someone wants to join a channel: ~p~n", [St]),
     ChannelAtom = list_to_atom(St#server_st.serverName ++ Channel),
     ChannelPID = whereis(ChannelAtom),
+    % Does a process with this atom exists?
     case ChannelPID of
         undefined ->
+            % Start a new process with a combination of the server name and the channel name
             genserver:start(ChannelAtom, channel:initial_state(Channel), fun channel:handle/2);
         _ ->
             ok
     end,
-    {reply, genserver:request(ChannelAtom,{join, PID}), St};
+    {reply, genserver:request(ChannelAtom,{join, PID}), St}; % Is okay since client does request in try catch block.
 
 handle(St, Request) ->
-    io:fwrite("In server.erl, Shouldn't have gotten here, derp: ~p~n", [Request]),
+    io:fwrite("In server.erl, Shouldn't have gotten here, this is a debugg message: ~p~n", [Request]),
     Response = "hi!",
     io:fwrite("Server is sending: ~p~n", [Response]),
     {reply, Response, St}.
