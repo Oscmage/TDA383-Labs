@@ -28,7 +28,7 @@ handle(St, {connect, Server}) ->
             {reply,{error,nick_taken,"Someone with this nick is already connected"},St};
         user_is_connected ->
             io:fwrite("Connected to server: ~p~n", [St]),
-            {reply,ok,St#client_st{server = list_to_atom(Server)}}
+            {reply, ok, St#client_st{server = list_to_atom(Server)}}
     end
   catch
      _:_ -> {reply,{error,server_not_reached,"Server unreachable4"},St}
@@ -70,7 +70,7 @@ handle(St, {join, Channel}) ->
                     joined ->
                         NewSt = St#client_st{chatrooms = St#client_st.chatrooms ++ [Channel]},
                         {reply, ok, NewSt}
-                end
+                      end
             catch
                 _:_ -> {reply,{error,server_not_reached,"Server unreachable2"},St}
             end
