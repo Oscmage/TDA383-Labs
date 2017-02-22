@@ -18,29 +18,34 @@ initial_state(Nick, GUIName) ->
 %% requesting process and NewState is the new state of the client.
 
 %% Connect to server
+%  Connect a user to a specific server by requesting it from genserver
+%  Response is a atom that receives the request data
+%  Different Response sent different messages and states to the requesting process
 handle(St, {connect, Server}) ->
   try
     Response = genserver:request(list_to_atom(Server), {connect, St#client_st.nick, self()}),
     case Response of
-        user_already_connected ->
+        user_already_connected -> %Requesting data states that the user is already connected to this server
           {reply, {error,user_already_connected,"User is already connected"}, St};
-        nick_taken ->
+        nick_taken -> %Requesting data/Response states that the nick is already taken, therefore not able to connect with the same nick
             {reply,{error,nick_taken,"Someone with this nick is already connected"},St};
-        user_is_connected ->
+        user_is_connected -> %Response states that the user has been allowed to connect to the server
             io:fwrite("Connected to server: ~p~n", [St]),
             {reply, ok, St#client_st{server = list_to_atom(Server)}}
     end
   catch
-     _:_ -> {reply,{error,server_not_reached,"Server unreachable4"},St}
+     _:_ -> {reply,{error,server_not_reached,"Server unreachable in connect-process"},St}
   end;
 
 
-%% Disconnect from server NOT WORKING AT CURRENT STAGE
+%% Disconnect from server
+% Disconnet a user to a server by first making sure that the user is connected to this server
+% Then it ensures that the user is not a member of any chatrooms
 handle(St, disconnect) ->
-    case St#client_st.server =:= '' of
+    case St#client_st.server =:= '' of %Checks if the user is connected to this server
         true -> {reply,{error,user_not_connected,"Can't disconnect from a server that you aren't connected to"}, St};
         false ->
-            case St#client_st.chatrooms =:= [] of
+            case St#client_st.chatrooms =:= [] of %Checks if the user has left all the channels
                 true ->
                     try
                         case genserver:request(St#client_st.server,{disconnect, St#client_st.nick, self()}) of
@@ -48,31 +53,32 @@ handle(St, disconnect) ->
                                 {reply,ok,St#client_st{server = ''}}
                         end
                     catch
-                          _:_ -> {reply,{error,server_not_reached,"Server unreachable1"},St}
+                          _:_ -> {reply,{error,server_not_reached,"Server unreachable in disconnect-process"},St}
                     end;
                 false -> {reply,{error,leave_channels_first,"Should leave channels first"},St}
             end
     end;
 
-% Join channel
+%% Join channel
+% Join a user to a channel by first checking if the user is connected to a server
+% Then it ensures that the user has not already joined this channel
+
 handle(St, {join, Channel}) ->
-    AlreadyJoined = lists:member(Channel,St#client_st.chatrooms),
     if
         St#client_st.server == '' ->
-            {reply, {error, not_implemented, "Server is disconnected"}, St};
-        AlreadyJoined == true ->
-            io:fwrite("Already connect to this channel: ~p~n", [St]),
-            {reply, {error, user_already_joined, "User has already joined this chat room"}, St};
+            {reply, {error, server_not_reached, "Server is disconnected"}, St};
         true ->
             try
                 Response = genserver:request(St#client_st.server, {join, Channel, self()}),
                 case Response of
                     joined ->
                         NewSt = St#client_st{chatrooms = St#client_st.chatrooms ++ [Channel]},
-                        {reply, ok, NewSt}
-                      end
+                        {reply, ok, NewSt};
+                    user_already_joined ->
+                        {reply, user_already_joined, St}
+                end
             catch
-                _:_ -> {reply,{error,server_not_reached,"Server unreachable2"},St}
+                _:_ -> {reply,{error,server_not_reached,"Server unreachable in join-process"},St}
             end
     end;
 
