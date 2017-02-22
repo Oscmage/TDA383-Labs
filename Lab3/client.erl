@@ -70,7 +70,7 @@ handle(St, {join, Channel}) ->
                     joined ->
                         NewSt = St#client_st{chatrooms = St#client_st.chatrooms ++ [Channel]},
                         {reply, ok, NewSt}
-                      end
+                end
             catch
                 _:_ -> {reply,{error,server_not_reached,"Server unreachable2"},St}
             end
