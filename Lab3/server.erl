@@ -19,18 +19,18 @@ initial_state(ServerName) ->
 %% {reply, Reply, NewState}, where Reply is the reply to be sent to the client
 %% and NewState is the new state of the server.
 
-handle(St, {connect,Nick,Pid}) ->
+handle(St, {connect, Nick, Pid}) ->
     Connected = lists:keymember(Pid, 2, St#server_st.cUsers),
-    if
-      Connected == true ->
+    if Connected == true ->
         {reply, {error,user_already_connected,"User is already connected"}, St};
-      true ->
+      true -> % else
         NickTaken = lists:keymember(Nick, 1, St#server_st.cUsers),
         case NickTaken of
             true -> % Nick taken by other user
                 {reply, nick_taken, St};
             false -> % Nick not taken free to take
-                {reply, user_is_connected, St#server_st{cUsers=[{Nick, Pid}]++St#server_st.cUsers}}
+                NewState = St#server_st{cUsers=[{Nick, Pid}]++St#server_st.cUsers},
+                {reply, user_is_connected, NewState}
         end
     end;
 
