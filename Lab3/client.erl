@@ -107,7 +107,7 @@ handle(St, {leave, Channel}) ->
 
 %% Sending messages
 % If the user is not a member of this chatroom, then the user can't send messages and an error message will be shown
-% If the user is a member, then a
+% If the user is a member, then a request will be received in order to send the message
 handle(St, {msg_from_GUI, Channel, Msg}) ->
     IsMember = lists:member(Channel,St#client_st.chatrooms),
     if
@@ -124,11 +124,14 @@ handle(St, {msg_from_GUI, Channel, Msg}) ->
     end;
 
 %% Get current nick
+% Replies with the old state/current state and the nick of the current user
 handle(St, whoami) ->
     Nick = atom_to_list(St#client_st.nick),
     {reply, Nick, St} ;
 
 %% Change nick
+% Checks if the user is connected to a server if then an error message will be shown since it is not possible to change nick when connected
+% If not, then the user will be updated with the new nick and a new state with the new nick will replace the old state
 handle(St, {nick, Nick}) ->
   if St#client_st.server == '' ->
       {reply, ok,St#client_st{nick=list_to_atom(Nick)}};
@@ -138,6 +141,7 @@ handle(St, {nick, Nick}) ->
 
 
 %% Incoming message
+%  Receives incoming messages and shows it
 handle(St = #client_st { gui = GUIName }, {incoming_msg, Channel, Name, Msg}) ->
     gen_server:call(list_to_atom(GUIName), {msg_to_GUI, Channel, Name++"> "++Msg}),
     {reply, ok, St}.
