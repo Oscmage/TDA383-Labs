@@ -52,6 +52,10 @@ handle(St, {join,Channel,PID}) ->
     end,
     {reply, genserver:request(ChannelAtom,{join, PID}), St}; % Is okay since client does request in try catch block.
 
+handle(St, get_all_users) ->
+  io:fwrite("Get all users: ~p~n", [St#server_st.cUsers]),
+  {reply, [Pid || {_, Pid} <- St#server_st.cUsers], St};
+
 handle(St, Request) ->
     io:fwrite("In server.erl, Shouldn't have gotten here, this is a debugg message: ~p~n", [Request]),
     Response = "hi!",

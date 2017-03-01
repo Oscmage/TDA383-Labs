@@ -139,11 +139,14 @@ handle(St, {nick, Nick}) ->
       {reply, {error, user_already_connected, "Not possible to change nick when connected to the server"}, St}
   end;
 
+handle(St,{calculate,{Function, Argument}}) ->
+    {reply,Function(Argument),St};
 
 %% Incoming message
 %  Receives incoming messages and shows it
 handle(St = #client_st { gui = GUIName }, {incoming_msg, Channel, Name, Msg}) ->
     gen_server:call(list_to_atom(GUIName), {msg_to_GUI, Channel, Name++"> "++Msg}),
     {reply, ok, St}.
+
 
 %% Retrieves the channel PID by convention from the server.erl
