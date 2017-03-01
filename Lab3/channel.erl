@@ -10,28 +10,31 @@ initial_state(ChannelName) ->
     #channel_st{name = ChannelName}.
 
 
-handle(St,{join,PID}) ->
-    case lists:member(PID, St#channel_st.cUsers) of % Is user already within this channel?
+handle(St, {join, PID}) ->
+    AlreadyInChannel = lists:member(PID, St#channel_st.cUsers),
+    case AlreadyInChannel of
         true ->
-            {reply,user_already_joined,St};
+            {reply, user_already_joined, St};
         false ->
-            NewState = St#channel_st{cUsers = [PID] ++ St#channel_st.cUsers},
-            {reply,joined,NewState}
+            NewState = St#channel_st{cUsers = [PID] ++ St#channel_st.cUsers}, % Add new user
+            {reply, joined, NewState}
     end;
 
-handle(St,{leave, PID}) ->
-    case lists:member(PID,St#channel_st.cUsers) of
+handle(St, {leave, PID}) ->
+    InChannel = lists:member(PID,St#channel_st.cUsers),
+    case InChannel of
         true ->
-            NewList = lists:delete(PID,St#channel_st.cUsers),
+            NewList = lists:delete(PID, St#channel_st.cUsers),
             NewState = St#channel_st{cUsers = NewList},
             {reply, left, NewState};
         false ->
             {reply, user_not_joined, St}
     end;
 
-handle(St,{message,Msg,Nick,PID}) ->
+handle(St, {message, Msg, Nick, PID}) ->
+    % Sends the message to all other users
     [ sendMessage(E, Nick , St#channel_st.name, Msg) || E <- St#channel_st.cUsers, E /= PID],
-    {reply, ok,St};
+    {reply, ok, St};
 
 handle(St, Request) ->
     io:fwrite("In channel.erl, Shouldn't have gotten here, derp: ~p~n", [Request]),
@@ -39,6 +42,7 @@ handle(St, Request) ->
     io:fwrite("Server is sending: ~p~n", [Response]),
     {reply, joined, St}.
 
-sendMessage(PID,From,Channel,Msg) ->
-    io:fwrite("Spreading message: ~p~n", [PID]),
-    spawn (fun() -> genserver:request(PID,{incoming_msg, Channel, atom_to_list(From), Msg}) end).
+%Simple function that spawns a new process to send the message around.
+sendMessage(PID, From, Channel, Msg) ->
+    io:fwrite("Spreading message to: ~p~n", [PID]),
+    spawn (fun() -> genserver:request(PID, {incoming_msg, Channel, atom_to_list(From), Msg}) end).

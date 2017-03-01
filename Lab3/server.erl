@@ -19,37 +19,41 @@ initial_state(ServerName) ->
 %% {reply, Reply, NewState}, where Reply is the reply to be sent to the client
 %% and NewState is the new state of the server.
 
-handle(St, {connect,Nick}) ->
-    case lists:member(Nick,St#server_st.cUsers) of
-        true ->
-            % io:fwrite("In true connect server, Connected users: ~p~n", [St]),
-            Response = nick_taken,
-            NewSt = St;
-        false ->
-            % io:fwrite("In false connect server, Connected users: ~p~n", [St]),
-            NewSt = St#server_st{cUsers=[Nick]++St#server_st.cUsers},
-            Response = user_is_connected
-    end,
-    {reply, Response, NewSt};
+handle(St, {connect, Nick, Pid}) ->
+    UserConnected = lists:keymember(Pid, 2, St#server_st.cUsers),
+    if UserConnected == true ->
+        {reply, {error, user_already_connected, "User is already connected"}, St};
+      true -> % else
+        NickTaken = lists:keymember(Nick, 1, St#server_st.cUsers),
+        case NickTaken of
+            true -> % Nick taken by other user
+                {reply, nick_taken, St};
+            false -> % Nick not taken free to take
+                NewState = St#server_st{cUsers = [{Nick, Pid}] ++ St#server_st.cUsers},
+                {reply, user_is_connected, NewState}
+        end
+    end;
 
-handle(St, {disconnect,Nick}) ->
-    {reply,ok, St#server_st{cUsers = lists:delete(Nick, St#server_st.cUsers)}}; % Send ok, and remove the nick from the users.
+handle(St, {disconnect,Nick,Pid}) ->
+    NewState = St#server_st{cUsers = lists:delete({Nick,Pid}, St#server_st.cUsers)}, % rmove the user from the users list
+    {reply,ok, NewState}; % Send ok and use the updated state
 
 
 handle(St, {join,Channel,PID}) ->
-    io:fwrite("Someone wants to join a channel: ~p~n", [St]),
     ChannelAtom = list_to_atom(St#server_st.serverName ++ Channel),
     ChannelPID = whereis(ChannelAtom),
+    % Does a process with this atom exists?
     case ChannelPID of
         undefined ->
+            % Start a new process with a combination of the server name and the channel name
             genserver:start(ChannelAtom, channel:initial_state(Channel), fun channel:handle/2);
         _ ->
             ok
     end,
-    {reply, genserver:request(ChannelAtom,{join, PID}), St};
+    {reply, genserver:request(ChannelAtom,{join, PID}), St}; % Is okay since client does request in try catch block.
 
 handle(St, Request) ->
-    io:fwrite("In server.erl, Shouldn't have gotten here, derp: ~p~n", [Request]),
+    io:fwrite("In server.erl, Shouldn't have gotten here, this is a debugg message: ~p~n", [Request]),
     Response = "hi!",
     io:fwrite("Server is sending: ~p~n", [Response]),
     {reply, Response, St}.

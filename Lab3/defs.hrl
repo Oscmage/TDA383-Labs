@@ -9,5 +9,4 @@
 % Add whatever other fields you need.
 -record(server_st, {serverName, cUsers=[]}).
 
-
 -record(channel_st, {name,cUsers = []}).
