@@ -39,7 +39,8 @@ send_job(Server, Function, Argument) ->
 
 spread_tasks(Array) ->
   Pid = self(),
-  [spawn (fun() -> Pid ! genserver:request(Pid,{calculate,Task}) end) || {Pid,Task} <- Array].
+  Refs = ,
+  [spawn (fun() -> Pid ! genserver:request(Pid,{calculate,Task,Ref}) end) || {Pid,Task} <- Array].
 
 
 assign_tasks([], _) -> [] ;
