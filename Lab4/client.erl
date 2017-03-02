@@ -139,8 +139,9 @@ handle(St, {nick, Nick}) ->
       {reply, {error, user_already_connected, "Not possible to change nick when connected to the server"}, St}
   end;
 
-handle(St,{calculate,{Function, Argument}}) ->
-    {reply,Function(Argument),St};
+handle(St,{do_task, Argument, Function, Ref}) ->
+  io:fwrite("do task  ~p ~p ~n ", [self(), Argument]),
+    {reply,{done, Function(Argument), Ref}, St};
 
 %% Incoming message
 %  Receives incoming messages and shows it
