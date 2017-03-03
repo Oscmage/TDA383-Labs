@@ -35,11 +35,19 @@ send_job(Server, Function, Argument) ->
       spread_tasks(Function, assign_tasks(CUsers, Argument))
   end.
 
+retrieve(Ref) ->
+  receive
+    {done,Result,Ref} ->
+      Result;
+    {_, Ref} ->
+      invalid_input
+  end.
+
 % delegate tasks to my clients
 spread_tasks(Function, List_TaskUser) ->
   Pid = self(),
-  [spawn (fun() -> Pid ! genserver:request(User,{do_task,Task, Function, Ref}) end) || {User,Task, Ref} <- List_TaskUser],
-  [ receive {done, Result, Ref} -> Result end || {_, _, Ref} <- List_TaskUser ].
+  [spawn (fun() -> Pid ! genserver:request(User,{do_task,Task, Function, Ref}, infinity) end) || {User,Task, Ref} <- List_TaskUser],
+  [ retrieve(Ref) || {_, _, Ref} <- List_TaskUser].
 
 
 assign_tasks([], _) -> [] ;

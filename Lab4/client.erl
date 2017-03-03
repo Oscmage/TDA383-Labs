@@ -140,8 +140,13 @@ handle(St, {nick, Nick}) ->
   end;
 
 handle(St,{do_task, Argument, Function, Ref}) ->
-  io:fwrite("do task  ~p ~p ~n ", [self(), Argument]),
-    {reply,{done, Function(Argument), Ref}, St};
+    try
+      Result = Function(Argument),
+      {reply,{done, Result, Ref}, St}
+    catch
+      _:_ -> {reply,{invalid_input, Ref}, St}
+    end;
+
 
 %% Incoming message
 %  Receives incoming messages and shows it
