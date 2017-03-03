@@ -24,20 +24,27 @@ start2() ->
     client().
 
 send_job(Server, Function, Argument) ->
-  CUsers = genserver:request(list_to_atom(Server), get_all_users),
-  io:fwrite("Reponse in cchat: ~p~n", [CUsers]),
-  case CUsers of
-    [] ->
-      "No connected users, can't complete";
-    _ ->
-    %  FunctionArray = lists:duplicate(length(Argument) ,Function),
-    %  Tasks = [ Task || Task <- lists:zip(FunctionArray, Argument)],
-      spread_tasks(Function, assign_tasks(CUsers, Argument))
+  try
+    CUsers = genserver:request(list_to_atom(Server), get_all_users),
+    io:fwrite("Reponse in cchat: ~p~n", [CUsers]),
+    case CUsers of
+      [] ->
+        "No connected users, can't complete";
+      _ ->
+        List_TaskUser = assign_tasks(CUsers, Argument),
+        spread_tasks(Function, List_TaskUser),
+        retrieve_result(List_TaskUser)
+    end
+  catch
+    _:_ -> "Server unreachable"
   end.
+
+retrieve_result (List_TaskUser) ->
+  [ retrieve(Ref) || {_, _, Ref} <- List_TaskUser].
 
 retrieve(Ref) ->
   receive
-    {done,Result,Ref} ->
+    {done, Result, Ref} ->
       Result;
     {_, Ref} ->
       invalid_input
@@ -46,8 +53,8 @@ retrieve(Ref) ->
 % delegate tasks to my clients
 spread_tasks(Function, List_TaskUser) ->
   Pid = self(),
-  [spawn (fun() -> Pid ! genserver:request(User,{do_task,Task, Function, Ref}, infinity) end) || {User,Task, Ref} <- List_TaskUser],
-  [ retrieve(Ref) || {_, _, Ref} <- List_TaskUser].
+  [ spawn (fun() -> Pid ! genserver:request(User, {do_task, Task, Function, Ref}, infinity) end) || {User, Task, Ref} <- List_TaskUser].
+
 
 
 assign_tasks([], _) -> [] ;
