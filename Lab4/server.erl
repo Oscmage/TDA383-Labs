@@ -34,7 +34,7 @@ handle(St, {connect, Nick, Pid}) ->
         end
     end;
 
-handle(St, {disconnect,Nick,Pid}) ->
+handle(St, {disconnect, Nick, Pid}) ->
     NewState = St#server_st{cUsers = lists:delete({Nick,Pid}, St#server_st.cUsers)}, % rmove the user from the users list
     {reply,ok, NewState}; % Send ok and use the updated state
 
@@ -52,12 +52,31 @@ handle(St, {join,Channel,PID}) ->
     end,
     {reply, genserver:request(ChannelAtom,{join, PID}), St}; % Is okay since client does request in try catch block.
 
-handle(St, get_all_users) ->
-  io:fwrite("Get all users: ~p~n", [St#server_st.cUsers]),
-  {reply, [Pid || {_, Pid} <- St#server_st.cUsers], St};
+handle(St, {send_job, F, Args, Ref, Pid}) ->
+  Users = get_all_users(),
+  case Users of
+    [] ->
+      {reply,no_users,St};
+    _ ->
+      List_TaskUser = assign_tasks(Users, Args),
+      Refs = [ Ref || {_, _, Ref} <-  List_TaskUser],
+      Pid = self(),
+      [ spawn (fun() -> Pid ! genserver:request(User, {do_task, Task, F, Ref}, infinity) end) || {User, Task, Ref} <- List_TaskUser],
+      {reply, ok, St#server_st{refs = Refs, respond_to = {Ref,Pid} } }
+  end;
 
-handle(St, Request) ->
-    io:fwrite("In server.erl, Shouldn't have gotten here, this is a debugg message: ~p~n", [Request]),
-    Response = "hi!",
-    io:fwrite("Server is sending: ~p~n", [Response]),
-    {reply, Response, St}.
+handle(St, {done, Result, Ref}) ->
+  if
+    lists:nth(0, St#server_st.refs) =:= Ref ->
+      {reply, ok, St#server_st{results = St#server_st.results ++ [Result]}};
+    true ->
+      
+  end.
+
+
+assign_tasks([], _) -> [] ;
+assign_tasks(Users, Tasks) ->
+  [  {lists:nth(((N-1) rem length(Users)) + 1, Users), Task, make_ref()} || {N,Task} <- lists:zip(lists:seq(1,length(Tasks)), Tasks) ].
+
+get_all_users () ->
+  [Pid || {_, Pid} <- St#server_st.cUsers].

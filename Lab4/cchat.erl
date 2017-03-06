@@ -25,16 +25,10 @@ start2() ->
 
 send_job(Server, Function, Argument) ->
   try
-    CUsers = genserver:request(list_to_atom(Server), get_all_users),
-    io:fwrite("Reponse in cchat: ~p~n", [CUsers]),
-    case CUsers of
-      [] ->
-        "No connected users, can't complete";
-      _ ->
-        List_TaskUser = assign_tasks(CUsers, Argument),
-        spread_tasks(Function, List_TaskUser),
-        retrieve_result(List_TaskUser)
-    end
+    Ref = make_ref(),
+    Pid = self(),
+    genserver:request(list_to_atom(Server), {send_job, Function, Argument, Ref, Pid}, infinity),
+    wait_for_response(Ref)
   catch
     _:_ -> "Server unreachable"
   end.
@@ -50,13 +44,7 @@ retrieve(Ref) ->
       invalid_input
   end.
 
-% delegate tasks to my clients
-spread_tasks(Function, List_TaskUser) ->
-  Pid = self(),
-  [ spawn (fun() -> Pid ! genserver:request(User, {do_task, Task, Function, Ref}, infinity) end) || {User, Task, Ref} <- List_TaskUser].
-
-
-
-assign_tasks([], _) -> [] ;
-assign_tasks(Users, Tasks) ->
-  [  {lists:nth(((N-1) rem length(Users)) + 1, Users), Task, make_ref()} || {N,Task} <- lists:zip(lists:seq(1,length(Tasks)), Tasks) ].
+wait_for_response (Ref) ->
+  receive
+    {done, Result, Ref}
+  end
