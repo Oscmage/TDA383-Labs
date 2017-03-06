@@ -52,31 +52,41 @@ handle(St, {join,Channel,PID}) ->
     end,
     {reply, genserver:request(ChannelAtom,{join, PID}), St}; % Is okay since client does request in try catch block.
 
+handle(St, {done, Result, Ref}) ->
+  io:fwrite("Server, done: ~p~n", [Result]),
+  NewList = lists:add(Result, St#server_st.results),
+  if
+      length(NewList) =:= length(St#server_st.refs) ->
+        Pid = element(2, St#server_st.respond_to),
+        R = element(1, St#server_st.respond_to),
+        SortedList = sort_by_pid(NewList, Ref),
+        genserver:request(Pid, {done, SortedList, R}, infinity),
+        {reply, ok, St#server_st{ respond_to={}, refs=[], results=[]}};
+      true ->
+        {reply, ok, St#server_st{results = NewList}}
+  end;
+
 handle(St, {send_job, F, Args, Ref, Pid}) ->
-  Users = get_all_users(),
+  Users = get_all_users(St),
+  io:fwrite("Server, Send job start: ~p~n", [Users]),
   case Users of
     [] ->
       {reply,no_users,St};
     _ ->
       List_TaskUser = assign_tasks(Users, Args),
-      Refs = [ Ref || {_, _, Ref} <-  List_TaskUser],
-      Pid = self(),
-      [ spawn (fun() -> Pid ! genserver:request(User, {do_task, Task, F, Ref}, infinity) end) || {User, Task, Ref} <- List_TaskUser],
-      {reply, ok, St#server_st{refs = Refs, respond_to = {Ref,Pid} } }
-  end;
-
-handle(St, {done, Result, Ref}) ->
-  if
-    lists:nth(0, St#server_st.refs) =:= Ref ->
-      {reply, ok, St#server_st{results = St#server_st.results ++ [Result]}};
-    true ->
-      
+      Refs = [ Temp_Ref || {_, _, Temp_Ref} <-  List_TaskUser],
+      P = self(),
+      [ spawn (fun() -> P ! genserver:request(User, {do_task, Task, F, Temp_Ref}, infinity) end) || {User, Task, Temp_Ref} <- List_TaskUser],
+      io:fwrite("Server, Send job almost end: ~p~n", [Refs]),
+      {reply, ok, St#server_st{refs = Refs, respond_to = {Ref, Pid} } }
   end.
 
+sort_by_pid(List, Ref) ->
+  List.
 
 assign_tasks([], _) -> [] ;
 assign_tasks(Users, Tasks) ->
   [  {lists:nth(((N-1) rem length(Users)) + 1, Users), Task, make_ref()} || {N,Task} <- lists:zip(lists:seq(1,length(Tasks)), Tasks) ].
 
-get_all_users () ->
+get_all_users (St) ->
   [Pid || {_, Pid} <- St#server_st.cUsers].

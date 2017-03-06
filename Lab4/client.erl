@@ -142,6 +142,7 @@ handle(St, {nick, Nick}) ->
 handle(St,{do_task, Argument, Function, Ref}) ->
     try
       Result = Function(Argument),
+      io:fwrite("Answering!: ~p~n", [Ref]),
       {reply,{done, Result, Ref}, St}
     catch
       _:_ -> {reply,{invalid_input, Ref}, St}

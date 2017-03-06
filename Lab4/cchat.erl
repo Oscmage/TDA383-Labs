@@ -28,23 +28,25 @@ send_job(Server, Function, Argument) ->
     Ref = make_ref(),
     Pid = self(),
     genserver:request(list_to_atom(Server), {send_job, Function, Argument, Ref, Pid}, infinity),
+    io:fwrite("CChat, wait for response: ~p~n", [Function]),
     wait_for_response(Ref)
   catch
     _:_ -> "Server unreachable"
   end.
 
-retrieve_result (List_TaskUser) ->
-  [ retrieve(Ref) || {_, _, Ref} <- List_TaskUser].
-
-retrieve(Ref) ->
-  receive
-    {done, Result, Ref} ->
-      Result;
-    {_, Ref} ->
-      invalid_input
-  end.
+% retrieve_result (List_TaskUser) ->
+%   [ retrieve(Ref) || {_, _, Ref} <- List_TaskUser].
+%
+% retrieve(Ref) ->
+%   receive
+%     {done, Result, Ref} ->
+%       Result;
+%     {_, Ref} ->
+%       invalid_input
+%   end.
 
 wait_for_response (Ref) ->
   receive
-    {done, Result, Ref}
-  end
+    {done, Result, Ref} ->
+      Result
+  end.

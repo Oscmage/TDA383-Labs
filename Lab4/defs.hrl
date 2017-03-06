@@ -7,6 +7,6 @@
 
 % This record defines the structure of the server process.
 % Add whatever other fields you need.
--record(server_st, {serverName, cUsers=[], respond_to, refs=[], results=[], q=[]}).
+-record(server_st, {serverName, cUsers=[], respond_to, refs=[], results=[]}).
 
 -record(channel_st, {name,cUsers = []}).
