@@ -139,12 +139,15 @@ handle(St, {nick, Nick}) ->
       {reply, {error, user_already_connected, "Not possible to change nick when connected to the server"}, St}
   end;
 
+%% do_task, it starts by calculating the function and arguments and stores it as Result
+% It then sends back to the handle-function done that belongs to this Pid (the inparameter).
+% It replies with done in order for the loop to continue execute
+% If arguments is not applicable in the funciton, we will get an exception. It returns back to handle-done with invalid_input
 handle(St, {do_task, Argument, Function, Ref, P}) ->
     try
       Result = Function(Argument),
-      io:fwrite("Answering!: ~p~n", [Ref]),
       genserver:request(P, {done, Result, Ref}),
-      {reply, {done, Result, Ref}, St} %Only for the loop to continue execution
+      {reply, {done, Result, Ref}, St}
     catch
       _:_ ->
         genserver:request(P, {done, invalid_input, Ref}),

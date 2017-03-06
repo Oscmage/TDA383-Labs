@@ -52,26 +52,29 @@ handle(St, {join,Channel,PID}) ->
     end,
     {reply, genserver:request(ChannelAtom,{join, PID}), St}; % Is okay since client does request in try catch block.
 
+%% Handle-function done, add the job that is recently done to our results-list
+% Then it checks if there are more jobs left by checking if the currentResultList is equal to refs-list
+% If there are no more jobs left, it sorts the ResultList and sends back {done, SortedList and current Ref} back to Pid
+% if there are more jobs left, it will add the current finished job to results-list    
 handle(St, {done, Result, Ref}) ->
-  io:fwrite("Server, done: ~p~n", [Result]),
-  NewList = St#server_st.results ++ [{Ref,Result}],
-  io:fwrite("Server, done, after NewList: ~p~n", [Result]),
+  CurrentResultList = St#server_st.results ++ [{Ref,Result}],
   if
-      length(NewList) == length(St#server_st.refs) ->
-        io:fwrite("Server, done, inside if: ~p~n", [Result]),
+      length(CurrentResultList) == length(St#server_st.refs) ->
+        SortedList = sort_by_ref(CurrentResultList, St#server_st.refs),
         Pid = element(2, St#server_st.respond_to),
         R = element(1, St#server_st.respond_to),
-        SortedList = sort_by_ref(NewList, St#server_st.refs),
         Pid ! {done, SortedList, R},
-        {reply, ok1, St#server_st{ respond_to={}, refs=[], results=[]}};
+        {reply, ok, St#server_st{ respond_to={}, refs=[], results=[]}};
       true ->
-        io:fwrite("Server, done, true part: ~p~n", [Result]),
-        {reply, ok2, St#server_st{results = NewList}}
+        {reply, ok, St#server_st{results = CurrentResultList}}
   end;
 
+%% This handle-function is called by send_job in cchat.erl
+% The purpose of this function is to distribute all jobs to all users
+% First, it checks if there is any users connected to the server at all
+% If there is, it will call assign_tasks and then create a new process for every user that is going to do a task
 handle(St, {send_job, F, Args, Ref, Pid}) ->
   Users = get_all_users(St),
-  io:fwrite("Server, Send job start: ~p~n", [Users]),
   case Users of
     [] ->
       {reply,no_users,St};
@@ -80,16 +83,18 @@ handle(St, {send_job, F, Args, Ref, Pid}) ->
       Refs = [ Temp_Ref || {_, _, Temp_Ref} <-  List_TaskUser],
       P = self(),
       [ spawn (fun() -> genserver:request(User, {do_task, Task, F, Temp_Ref, P}, infinity) end) || {User, Task, Temp_Ref} <- List_TaskUser],
-      io:fwrite("Server, Send job almost end: ~p~n", [Refs]),
-      {reply, ok3, St#server_st{refs = Refs, respond_to = {Ref, Pid} } }
+      {reply, ok, St#server_st{refs = Refs, respond_to = {Ref, Pid} } }
   end.
 
+%% Sort a list based on the second argument, Refs
 sort_by_ref(List, Refs) ->
   [ element(2, lists:keyfind(R, 1, List)) || R <- Refs].
 
+%% assign_tasks pair up users with tasks and add ref to each elements in the list
 assign_tasks([], _) -> [] ;
 assign_tasks(Users, Tasks) ->
   [  {lists:nth(((N-1) rem length(Users)) + 1, Users), Task, make_ref()} || {N,Task} <- lists:zip(lists:seq(1,length(Tasks)), Tasks) ].
 
+%% Return all users
 get_all_users (St) ->
   [Pid || {_, Pid} <- St#server_st.cUsers].

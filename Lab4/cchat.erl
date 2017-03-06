@@ -23,17 +23,20 @@ start2() ->
     client(),
     client().
 
+%% Send_jobs call send_job in server in order to distribute all jobs to all clients connected to the server
+% Then it calls wait_for_response, a function that waits for responses and returns the result
+% If an exception is thrown from genserver then it will print out "Server is unreachable"
 send_job(Server, Function, Argument) ->
   try
     Ref = make_ref(),
     Pid = self(),
-    io:fwrite("CChat, Arguments: ~p~n", [Argument]),
     genserver:request(list_to_atom(Server), {send_job, Function, Argument, Ref, Pid}, infinity),
     wait_for_response(Ref)
   catch
-    _:_ -> "Server unreachable"
+    _:_ -> "Server is unreachable"
   end.
 
+%% wait_for_response waits until it receives a response in the form of {done, Result, Ref} and it returns Result
 wait_for_response (Ref) ->
   receive
     {done, Result, Ref} ->
