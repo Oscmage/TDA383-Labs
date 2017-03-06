@@ -1051,4 +1051,6 @@ workers() ->
   TX2 = os:timestamp(),
   putStrLn("results: ~p received in ~pms", [Results, timer:now_diff(TX2, TX1) div 1000]),
   Msg = "results received correctly",
+  io:fwrite("Final calc: ~p~n", [Results]),
+  io:fwrite("Correcet calc: ~p~n", [Gold]),
   assert(Msg, Results =:= Gold).

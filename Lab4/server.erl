@@ -54,16 +54,19 @@ handle(St, {join,Channel,PID}) ->
 
 handle(St, {done, Result, Ref}) ->
   io:fwrite("Server, done: ~p~n", [Result]),
-  NewList = lists:add(Result, St#server_st.results),
+  NewList = St#server_st.results ++ [{Ref,Result}],
+  io:fwrite("Server, done, after NewList: ~p~n", [Result]),
   if
-      length(NewList) =:= length(St#server_st.refs) ->
+      length(NewList) == length(St#server_st.refs) ->
+        io:fwrite("Server, done, inside if: ~p~n", [Result]),
         Pid = element(2, St#server_st.respond_to),
         R = element(1, St#server_st.respond_to),
-        SortedList = sort_by_pid(NewList, Ref),
-        genserver:request(Pid, {done, SortedList, R}, infinity),
-        {reply, ok, St#server_st{ respond_to={}, refs=[], results=[]}};
+        SortedList = sort_by_ref(NewList, St#server_st.refs),
+        Pid ! {done, SortedList, R},
+        {reply, ok1, St#server_st{ respond_to={}, refs=[], results=[]}};
       true ->
-        {reply, ok, St#server_st{results = NewList}}
+        io:fwrite("Server, done, true part: ~p~n", [Result]),
+        {reply, ok2, St#server_st{results = NewList}}
   end;
 
 handle(St, {send_job, F, Args, Ref, Pid}) ->
@@ -72,17 +75,17 @@ handle(St, {send_job, F, Args, Ref, Pid}) ->
   case Users of
     [] ->
       {reply,no_users,St};
-    _ ->
+    _ -> % Great, we got some users that can do some work for us
       List_TaskUser = assign_tasks(Users, Args),
       Refs = [ Temp_Ref || {_, _, Temp_Ref} <-  List_TaskUser],
       P = self(),
-      [ spawn (fun() -> P ! genserver:request(User, {do_task, Task, F, Temp_Ref}, infinity) end) || {User, Task, Temp_Ref} <- List_TaskUser],
+      [ spawn (fun() -> genserver:request(User, {do_task, Task, F, Temp_Ref, P}, infinity) end) || {User, Task, Temp_Ref} <- List_TaskUser],
       io:fwrite("Server, Send job almost end: ~p~n", [Refs]),
-      {reply, ok, St#server_st{refs = Refs, respond_to = {Ref, Pid} } }
+      {reply, ok3, St#server_st{refs = Refs, respond_to = {Ref, Pid} } }
   end.
 
-sort_by_pid(List, Ref) ->
-  List.
+sort_by_ref(List, Refs) ->
+  [ element(2, lists:keyfind(R, 1, List)) || R <- Refs].
 
 assign_tasks([], _) -> [] ;
 assign_tasks(Users, Tasks) ->

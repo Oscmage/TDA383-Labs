@@ -139,13 +139,16 @@ handle(St, {nick, Nick}) ->
       {reply, {error, user_already_connected, "Not possible to change nick when connected to the server"}, St}
   end;
 
-handle(St,{do_task, Argument, Function, Ref}) ->
+handle(St, {do_task, Argument, Function, Ref, P}) ->
     try
       Result = Function(Argument),
       io:fwrite("Answering!: ~p~n", [Ref]),
-      {reply,{done, Result, Ref}, St}
+      genserver:request(P, {done, Result, Ref}),
+      {reply, {done, Result, Ref}, St} %Only for the loop to continue execution
     catch
-      _:_ -> {reply,{invalid_input, Ref}, St}
+      _:_ ->
+        genserver:request(P, {done, invalid_input, Ref}),
+        {reply,{invalid_input, Ref}, St}
     end;
 
 
